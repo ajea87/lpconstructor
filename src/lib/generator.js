@@ -48,18 +48,18 @@ function buildHeroSection(d) {
 <style>
   .hero-section{padding:0;}
   .hero-inner{padding:36px 16px;}
-  .hero-title{font-size:48px;font-weight:900;line-height:1.04;letter-spacing:-1.6px;margin:0 auto 18px;}
-  .hero-subtitle{font-size:22px;font-weight:600;line-height:1.3;margin:0 auto 6px;opacity:.92;}
+  .hero-title{font-size:48px;font-weight:900;line-height:1.04;letter-spacing:-1.6px;margin:0 auto 18px;color:#ffffff!important;}
+  .hero-subtitle{font-size:22px;font-weight:600;line-height:1.3;margin:0 auto 6px;opacity:.92;color:#ffffff!important;}
   .hero-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:42px;align-items:center;margin-top:10px;}
   .hero-video{position:relative;width:100%;border-radius:14px;overflow:hidden;background:#111;box-shadow:0 18px 60px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.08);}
   .hero-video::before{content:"";display:block;padding-top:56.25%;}
-  .sound-btn{position:absolute;top:12px;right:12px;z-index:10;display:inline-flex;align-items:center;gap:7px;background:rgba(0,0,0,.70);color:#fff;border:1.5px solid rgba(255,255,255,.50);border-radius:999px;padding:7px 14px 7px 10px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;animation:soundPulse 2.2s ease-in-out infinite;transition:background 150ms,border-color 150ms,opacity 250ms,transform 150ms;}
+  .sound-btn{position:absolute;top:12px;right:12px;z-index:10;display:inline-flex;align-items:center;gap:7px;background:rgba(0,0,0,.70);color:#fff!important;border:1.5px solid rgba(255,255,255,.50);border-radius:999px;padding:7px 14px 7px 10px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;animation:soundPulse 2.2s ease-in-out infinite;transition:background 150ms,border-color 150ms,opacity 250ms,transform 150ms;}
   .sound-btn:hover{background:rgba(0,0,0,.92);border-color:rgba(255,255,255,.95);transform:scale(1.05);animation-play-state:paused;}
   .sound-btn.is-hidden{opacity:0;pointer-events:none;}
   .sound-btn svg{width:14px;height:14px;flex-shrink:0;}
   @keyframes soundPulse{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,.30);}45%{transform:scale(1.04);box-shadow:0 0 0 6px rgba(255,255,255,.08);}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,0);}}
-  .hero-right{text-align:center;}
-  .hero-kicker{display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-weight:700;font-size:13px;margin-bottom:14px;}
+  .hero-right{text-align:center;color:#ffffff!important;}
+  .hero-kicker{display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-weight:700;font-size:13px;margin-bottom:14px;color:#ffffff!important;}
   .hero-actions{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:22px;width:100%;}
   .hero-btn{width:min(520px,92%);height:48px;border-radius:12px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;user-select:none;}
   .hero-btn.primary{background:#fff;color:#000!important;border:2px solid #fff;}
@@ -95,7 +95,7 @@ function buildHeroSection(d) {
         <div class="hero-kicker">${d.courseLevel}</div>
         <h1 class="hero-title" style="margin-bottom:10px;">${d.courseTitle}</h1>
         <p class="hero-subtitle" style="font-size:14px;font-weight:700;opacity:.9;margin-bottom:16px;">${d.courseSubtitle}</p>
-        <div style="opacity:.78;font-weight:650;font-size:13px;line-height:1.3;margin-top:8px;">
+        <div style="opacity:.78;font-weight:650;font-size:13px;line-height:1.3;margin-top:8px;color:rgba(255,255,255,0.78)!important;">
           Instructor: ${d.artistName},<br/>${d.artistRole}
         </div>
         <div class="hero-actions">

@@ -43,15 +43,13 @@ const DEFAULT_FORM = {
     totalLessons: '',
     category: '',
     courses: [],
-    instructorName: '',
-    instructorRole: '',
     instructorPhoto: '',
   },
 };
 
 // ── About Form Builder sub-components ──────────────────────
 
-function AboutFormBuilder({ aboutData, onChange }) {
+function AboutFormBuilder({ aboutData, onChange, artistName, artistRole }) {
   function setField(key, val) {
     onChange({ ...aboutData, [key]: val });
   }
@@ -275,19 +273,19 @@ function AboutFormBuilder({ aboutData, onChange }) {
       {/* Instructor */}
       <div>
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Instructor</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-gray-400 mb-1 block">Name</label>
-            <input style={inputStyle} value={aboutData.instructorName || ''} onChange={e => setField('instructorName', e.target.value)} placeholder="Carolina Rosa" />
+        <div
+          className="rounded-lg px-4 py-3 mb-3 text-xs"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }}
+        >
+          Instructor name and role are taken from the Artist section above.
+          <div className="mt-1 font-bold" style={{ color: 'rgba(255,255,255,0.7)' }}>
+            {artistName || <span style={{ opacity: 0.4 }}>Name not set</span>}
+            {artistRole ? ` · ${artistRole}` : ''}
           </div>
-          <div>
-            <label className="text-xs text-gray-400 mb-1 block">Role</label>
-            <input style={inputStyle} value={aboutData.instructorRole || ''} onChange={e => setField('instructorRole', e.target.value)} placeholder="Traditional Bachata Artist & Educator" />
-          </div>
-          <div className="col-span-2">
-            <label className="text-xs text-gray-400 mb-1 block">Photo URL</label>
-            <input style={inputStyle} value={aboutData.instructorPhoto || ''} onChange={e => setField('instructorPhoto', e.target.value)} placeholder="https://..." />
-          </div>
+        </div>
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">Photo URL</label>
+          <input style={inputStyle} value={aboutData.instructorPhoto || ''} onChange={e => setField('instructorPhoto', e.target.value)} placeholder="https://..." />
         </div>
       </div>
     </div>
@@ -420,7 +418,7 @@ export default function Builder() {
 
       // Step 2: Translate About x 4 in parallel
       setStep(2);
-      const enAboutHtml = buildAboutHtmlStr(form.aboutData);
+      const enAboutHtml = buildAboutHtmlStr({ ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole });
       const [aboutEs, aboutIt, aboutFr, aboutDe] = await Promise.all([
         translateAboutHtml(enAboutHtml, 'es', glossary),
         translateAboutHtml(enAboutHtml, 'it', glossary),
@@ -472,7 +470,7 @@ export default function Builder() {
 
   function generateEnOnly() {
     setError('');
-    const enAboutHtml = buildAboutHtmlStr(form.aboutData);
+    const enAboutHtml = buildAboutHtmlStr({ ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole });
     const enStrings = {
       courseLevel:      form.courseLevel,
       courseTitle:      form.courseTitle,
@@ -626,6 +624,8 @@ export default function Builder() {
         <AboutFormBuilder
           aboutData={form.aboutData}
           onChange={data => setField('aboutData', data)}
+          artistName={form.artistName}
+          artistRole={form.artistRole}
         />
       </div>
 
