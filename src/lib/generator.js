@@ -46,7 +46,8 @@ function buildHeroSection(d) {
   const freeLessonId = d.freeLessonVideoId || 'FREE_ID';
   return `
 <style>
-  .hero-section{padding:36px 16px;}
+  .hero-section{padding:0;}
+  .hero-inner{padding:36px 16px;}
   .hero-title{font-size:48px;font-weight:900;line-height:1.04;letter-spacing:-1.6px;margin:0 auto 18px;}
   .hero-subtitle{font-size:22px;font-weight:600;line-height:1.3;margin:0 auto 6px;opacity:.92;}
   .hero-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:42px;align-items:center;margin-top:10px;}
@@ -67,7 +68,7 @@ function buildHeroSection(d) {
   .hero-btn.outline:hover{border-color:rgba(255,255,255,1);}
   .hero-btn .play{width:0;height:0;border-left:10px solid #fff;border-top:6px solid transparent;border-bottom:6px solid transparent;transform:translateX(1px);}
   @media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:18px;}.hero-right{padding-top:6px;}}
-  @media(max-width:600px){.hero-section{padding-top:0!important;padding-bottom:0!important;}.hero-title{font-size:30px!important;}.hero-subtitle{font-size:16px!important;}.hero-actions{margin-top:16px;}.hero-btn{height:46px;}.sound-btn{font-size:11px;padding:6px 11px 6px 8px;top:8px;right:8px;}}
+  @media(max-width:600px){.hero-inner{padding-top:0;padding-bottom:0;}.hero-title{font-size:30px!important;}.hero-subtitle{font-size:16px!important;}.hero-actions{margin-top:16px;}.hero-btn{height:46px;}.sound-btn{font-size:11px;padding:6px 11px 6px 8px;top:8px;right:8px;}}
   .video-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:18px;z-index:999999;}
   .video-modal.is-open{display:flex;}
   .video-modal__panel{width:min(920px,100%);background:#0b0b0b;border:1px solid rgba(255,255,255,.14);border-radius:14px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.55);}
@@ -79,8 +80,8 @@ function buildHeroSection(d) {
   .video-modal__video iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;}
 </style>
 <script src="https://fast.wistia.com/assets/external/E-v1.js" async><\/script>
-<div class="hero-section" style="background:#000;color:#fff;text-align:center;font-family:'Montserrat',sans-serif;margin:0;">
-  <div style="max-width:1180px;margin:0 auto;">
+<div class="hero-section" style="background:#000;color:#fff;text-align:center;font-family:'Montserrat',sans-serif;margin:0;width:100%;">
+  <div class="hero-inner" style="max-width:1180px;margin:0 auto;">
     <div class="hero-grid">
       <div class="hero-video" id="heroVideoWrap">
         <script src="https://fast.wistia.com/embed/medias/${heroId}.jsonp" async><\/script>
@@ -140,8 +141,8 @@ function buildBeyondSection(d) {
   const beyondSuffix = d.beyondSuffix || 'You Also Get';
   return `
 <style>
-  .ed4-bonus{background:#f6f3ef;color:#121212;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;padding:80px 18px 90px;}
-  .ed4-bonus .ed4-wrap{max-width:1080px;margin:0 auto;}
+  .ed4-bonus{background:#f6f3ef;color:#121212;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;padding:0;width:100%;}
+  .ed4-bonus .ed4-wrap{max-width:1080px;margin:0 auto;padding:80px 18px 90px;}
   .ed4-bonus-head{max-width:780px;margin:0 auto 28px;text-align:left;}
   .ed4-bonus-title{margin:0;font-size:46px;font-weight:900;letter-spacing:-.03em;color:#111!important;}
   .ed4-bonus-sub{margin-top:6px;font-size:18px;font-weight:700;color:rgba(20,20,20,.45);}
@@ -157,7 +158,7 @@ function buildBeyondSection(d) {
   .ed4-benefit h4{margin:0 0 4px;font-size:16px;font-weight:900;letter-spacing:-.01em;color:#111;}
   .ed4-benefit p{margin:0;font-size:15px;line-height:1.65;color:rgba(20,20,20,.72);}
   @media(max-width:820px){.ed4-bonus-title{font-size:40px;}.ed4-stats{grid-template-columns:1fr;}.ed4-stat-number{font-size:32px;}}
-  @media(max-width:600px){.ed4-bonus{padding:54px 14px 70px;}.ed4-bonus-title{font-size:34px;}.ed4-bonus-sub{font-size:16px;}.ed4-stat{padding:14px 14px 12px;}.ed4-benefit{padding:13px 14px;}.ed4-benefit h4{font-size:15px;}.ed4-benefit p{font-size:14px;}}
+  @media(max-width:600px){.ed4-bonus .ed4-wrap{padding:54px 14px 70px;}.ed4-bonus-title{font-size:34px;}.ed4-bonus-sub{font-size:16px;}.ed4-stat{padding:14px 14px 12px;}.ed4-benefit{padding:13px 14px;}.ed4-benefit h4{font-size:15px;}.ed4-benefit p{font-size:14px;}}
 </style>
 <section class="ed4-bonus">
   <div class="ed4-wrap">
@@ -215,8 +216,8 @@ function buildUnlimitedSection(d) {
   .ed-row--ltr .ed-track{animation:ed-scroll-ltr 84s linear infinite;}
   @media(max-width:980px){.ed-uac__title{font-size:36px;}.ed-tile{width:250px;height:140px;border-radius:16px;}.ed-row{margin:12px 0;}.ed-track{gap:14px;}.ed-row--offset .ed-track{transform:translateX(-70px);}.ed-uac__sidefade{width:90px;}}
   @media(max-width:600px){.ed-uac{padding:54px 0 48px;}.ed-uac__title{font-size:28px;}.ed-uac__header{transform:translateY(18px);}.ed-uac__btn{height:44px;padding:0 22px;font-size:15px;}.ed-tile{width:210px;height:120px;border-radius:14px;}.ed-track{gap:12px;}.ed-row--offset .ed-track{transform:translateX(-55px);}.ed-row--rtl .ed-track{animation-duration:62s;}.ed-row--ltr .ed-track{animation-duration:68s;}.ed-uac__sidefade{width:70px;}}
-  .ed-footer{background:#000;color:rgba(255,255,255,.60);font-family:'Montserrat',sans-serif;padding:18px 16px 26px;text-align:center;user-select:none;}
-  .ed-footer__wrap{max-width:1100px;margin:0 auto;}
+  .ed-footer{background:#000;color:rgba(255,255,255,.60);font-family:'Montserrat',sans-serif;padding:0;text-align:center;user-select:none;width:100%;}
+  .ed-footer__wrap{max-width:1100px;margin:0 auto;padding:18px 16px 26px;}
   .ed-footer__divider{height:1px;background:rgba(255,255,255,.08);margin:0 auto 14px;width:min(820px,100%);}
   .ed-footer__logo{display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;opacity:.85;}
   .ed-footer__logo img{height:50px;width:auto;display:block;opacity:.82;filter:grayscale(100%) contrast(1.05);pointer-events:none;}
@@ -337,8 +338,8 @@ export function buildAboutHtmlStr(aboutData) {
     : '';
 
   return `<style>
-  .ed4-section{background:#f6f3ef;color:#121212;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;padding:80px 18px 90px;}
-  .ed4-wrap{max-width:1080px;margin:0 auto;}
+  .ed4-section{background:#f6f3ef;color:#121212;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;padding:0;width:100%;}
+  .ed4-section .ed4-wrap{max-width:1080px;margin:0 auto;padding:80px 18px 90px;}
   .ed4-about{max-width:780px;margin:0 auto 46px;text-align:left;}
   .ed4-about h2{margin:0 0 12px;font-size:34px;font-weight:900;letter-spacing:-.02em;color:#111!important;}
   .ed4-rule{height:1px;background:rgba(0,0,0,.26);margin:0 0 18px;width:420px;max-width:100%;}
@@ -383,7 +384,7 @@ export function buildAboutHtmlStr(aboutData) {
   .ed4-wistia-wrap{width:100%;aspect-ratio:16/9;background:#000;position:relative;}
   .ed4-wistia-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;}
   @media(max-width:820px){.ed4-about,.ed4-lessons,.ed4-instructor{max-width:680px;}.ed4-lessons h3{font-size:40px;}.ed4-btn{font-size:18px;padding:13px 16px;}.ed4-name{font-size:28px;}}
-  @media(max-width:600px){.ed4-section{padding:54px 14px 70px;}.ed4-about{margin-bottom:34px;}.ed4-about h2{font-size:26px;}.ed4-rule{width:260px;margin-bottom:14px;}.ed4-about p{font-size:16px;margin-bottom:14px;}.ed4-meta{font-size:16px;}.ed4-lessons h3{font-size:34px;}.ed4-lessons .sub{font-size:16px;}.ed4-btn{font-size:16px;padding:12px 14px;}.ed4-panel{font-size:15px;}.ed4-avatar{width:84px;height:84px;}.ed4-name{font-size:26px;}}
+  @media(max-width:600px){.ed4-section .ed4-wrap{padding:54px 14px 70px;}.ed4-about{margin-bottom:34px;}.ed4-about h2{font-size:26px;}.ed4-rule{width:260px;margin-bottom:14px;}.ed4-about p{font-size:16px;margin-bottom:14px;}.ed4-meta{font-size:16px;}.ed4-lessons h3{font-size:34px;}.ed4-lessons .sub{font-size:16px;}.ed4-btn{font-size:16px;padding:12px 14px;}.ed4-panel{font-size:15px;}.ed4-avatar{width:84px;height:84px;}.ed4-name{font-size:26px;}}
 </style>
 
 <section class="ed4-section">
