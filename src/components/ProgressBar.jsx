@@ -29,8 +29,7 @@ export default function ProgressBar({ currentStep }) {
             </div>
             <div className="flex-1 min-w-0">
               <span
-                className="text-sm font-semibold"
-                style={{ color: pending ? 'rgba(255,255,255,0.25)' : '#fff' }}
+                className={`text-sm font-semibold ${pending ? 'text-gray-500' : 'text-white'}`}
               >
                 {step.label}
               </span>

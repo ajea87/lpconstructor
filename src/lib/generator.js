@@ -281,6 +281,176 @@ function buildSelector(slug) {
 <\/script>`;
 }
 
+export function buildAboutHtmlStr(aboutData) {
+  const {
+    introText = '',
+    totalLessons = '',
+    category = '',
+    courses = [],
+    instructorName = '',
+    instructorRole = '',
+    instructorPhoto = '',
+  } = aboutData;
+
+  // Build intro paragraphs
+  const paragraphs = introText
+    .split(/\n\n+/)
+    .map(p => p.trim())
+    .filter(Boolean)
+    .map(p => `      <p>${p.replace(/\n/g, '<br/>')}</p>`)
+    .join('\n');
+
+  // Build accordion items
+  const accordionItems = courses.map((course) => {
+    const lessonCount = (course.lessons || []).length;
+    const lessonsHtml = (course.lessons || []).map((lesson) => {
+      const freeBtn = lesson.wistiaId
+        ? `\n              <button class="ed4-free" type="button" data-wistia="${lesson.wistiaId}" data-title="${lesson.title} (FREE LESSON)">\n                <span class="ed4-play" aria-hidden="true">▶</span> Free lesson\n              </button>`
+        : '';
+      return `
+            <div class="ed4-lesson">
+              <div class="ed4-lesson-left">
+                <span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="ed4-lesson-title">${lesson.title}</span>
+              </div>${freeBtn}
+            </div>`;
+    }).join('');
+
+    const titleWithMeta = `${course.title} | ${instructorName || 'Instructor'} | ${course.level || 'All levels'}`;
+
+    return `
+        <div class="ed4-item">
+          <button class="ed4-btn" type="button" aria-expanded="false">
+            <span class="title">${titleWithMeta}</span>
+            <span class="ed4-right">
+              <span class="ed4-course-meta">${lessonCount} lessons</span>
+              <span class="chev">›</span>
+            </span>
+          </button>
+          <div class="ed4-panel">${lessonsHtml}
+          </div>
+        </div>`;
+  }).join('');
+
+  const avatarHtml = instructorPhoto
+    ? `<img src="${instructorPhoto}" alt="${instructorName}"/>`
+    : '';
+
+  return `<style>
+  .ed4-section{background:#f6f3ef;color:#121212;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;padding:80px 18px 90px;}
+  .ed4-wrap{max-width:1080px;margin:0 auto;}
+  .ed4-about{max-width:780px;margin:0 auto 46px;text-align:left;}
+  .ed4-about h2{margin:0 0 12px;font-size:34px;font-weight:900;letter-spacing:-.02em;color:#111!important;}
+  .ed4-rule{height:1px;background:rgba(0,0,0,.26);margin:0 0 18px;width:420px;max-width:100%;}
+  .ed4-about p{margin:0 0 18px;font-size:18px;line-height:1.75;color:rgba(20,20,20,.75);}
+  .ed4-meta{margin-top:18px;font-size:18px;line-height:1.7;color:rgba(20,20,20,.86);}
+  .ed4-meta b{color:#111;font-weight:800;}
+  .ed4-lessons{max-width:780px;margin:0 auto;text-align:left;}
+  .ed4-lessons h3{margin:0;font-size:46px;font-weight:900;letter-spacing:-.03em;color:#111!important;}
+  .ed4-lessons .sub{margin-top:4px;font-size:18px;font-weight:700;color:rgba(20,20,20,.45);}
+  .ed4-lessons .rule{height:1px;background:rgba(0,0,0,.24);margin:14px 0 18px;width:100%;}
+  .ed4-acc{display:grid;gap:10px;}
+  .ed4-item{border-radius:4px;overflow:hidden;box-shadow:0 8px 18px rgba(0,0,0,.10);}
+  .ed4-btn{width:100%;border:none;cursor:pointer;background:#2f3439;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:20px;font-weight:800;line-height:1.2;text-align:left;}
+  .ed4-btn span.title{display:block;}
+  .ed4-right{display:flex;align-items:center;gap:14px;flex:0 0 auto;white-space:nowrap;}
+  .ed4-course-meta{font-size:14px;font-weight:800;color:rgba(255,255,255,.65);}
+  .ed4-btn .chev{font-size:28px;line-height:1;opacity:.95;transform:translateY(-1px);}
+  .ed4-panel{display:none;background:#fff;border:1px solid rgba(0,0,0,.12);border-top:none;padding:10px 0;font-size:16px;line-height:1.7;color:rgba(20,20,20,.82);}
+  .ed4-item.is-open .ed4-panel{display:block;}
+  .ed4-item.is-open .ed4-btn .chev{transform:rotate(90deg) translateX(2px);}
+  .ed4-lesson{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 18px;}
+  .ed4-lesson+.ed4-lesson{border-top:1px solid rgba(0,0,0,.08);}
+  .ed4-lesson-left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .ed4-ic{width:18px;height:18px;color:rgba(0,0,0,.55);flex:0 0 auto;}
+  .ed4-lesson-title{font-size:14px;font-weight:600;color:rgba(20,20,20,.75);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ed4-free{border:0;background:transparent;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#ff0033;padding:4px 2px;flex:0 0 auto;white-space:nowrap;}
+  .ed4-free:hover{text-decoration:underline;}
+  .ed4-play{width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#ff0033;color:#fff;font-size:10px;line-height:1;padding-left:1px;}
+  .ed4-instructor{max-width:780px;margin:60px auto 0;text-align:left;}
+  .ed4-avatar{width:92px;height:92px;border-radius:999px;overflow:hidden;border:4px solid rgba(0,0,0,.18);box-shadow:0 16px 30px rgba(0,0,0,.16);background:#ddd;}
+  .ed4-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .ed4-name{margin:14px 0 6px;font-size:32px;font-weight:900;letter-spacing:-.02em;color:#111;}
+  .ed4-role{margin:0 0 10px;font-size:16px;font-weight:800;color:rgba(60,120,125,.58);}
+  .ed4-instructor-sep{height:1px;background:rgba(0,0,0,.22);width:100%;margin:10px 0 14px;}
+  .ed4-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999;}
+  .ed4-modal.is-open{display:flex;}
+  .ed4-modal-card{width:min(920px,100%);background:#0f0f10;border-radius:12px;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.45);}
+  .ed4-modal-top{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.06);}
+  .ed4-modal-title{font-size:13px;font-weight:800;color:rgba(255,255,255,.85);padding-right:10px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  .ed4-close{border:0;background:transparent;color:#fff;cursor:pointer;font-size:22px;line-height:1;padding:6px 10px;opacity:.85;}
+  .ed4-close:hover{opacity:1;}
+  .ed4-wistia-wrap{width:100%;aspect-ratio:16/9;background:#000;position:relative;}
+  .ed4-wistia-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;}
+  @media(max-width:820px){.ed4-about,.ed4-lessons,.ed4-instructor{max-width:680px;}.ed4-lessons h3{font-size:40px;}.ed4-btn{font-size:18px;padding:13px 16px;}.ed4-name{font-size:28px;}}
+  @media(max-width:600px){.ed4-section{padding:54px 14px 70px;}.ed4-about{margin-bottom:34px;}.ed4-about h2{font-size:26px;}.ed4-rule{width:260px;margin-bottom:14px;}.ed4-about p{font-size:16px;margin-bottom:14px;}.ed4-meta{font-size:16px;}.ed4-lessons h3{font-size:34px;}.ed4-lessons .sub{font-size:16px;}.ed4-btn{font-size:16px;padding:12px 14px;}.ed4-panel{font-size:15px;}.ed4-avatar{width:84px;height:84px;}.ed4-name{font-size:26px;}}
+</style>
+
+<section class="ed4-section">
+  <div class="ed4-wrap">
+    <div class="ed4-about">
+      <h2>About these courses</h2>
+      <div class="ed4-rule"></div>
+${paragraphs}
+      <div class="ed4-meta">
+        Instructor: <b>${instructorName}</b><br/>
+        Lessons: <b>${totalLessons}</b><br/>
+        Category: <b>${category}</b><br/>
+      </div>
+    </div>
+
+    <div class="ed4-lessons">
+      <h3>Courses</h3>
+      <div class="rule"></div>
+      <div class="ed4-acc" id="ed4AccordionCourses">
+${accordionItems}
+      </div>
+    </div>
+
+    <div class="ed4-instructor">
+      <div class="ed4-avatar">${avatarHtml}</div>
+      <div class="ed4-name">${instructorName}</div>
+      <div class="ed4-role">${instructorRole}</div>
+      <div class="ed4-instructor-sep"></div>
+    </div>
+  </div>
+</section>
+
+<div class="ed4-modal" id="ed4VideoModal" aria-hidden="true">
+  <div class="ed4-modal-card" role="dialog" aria-modal="true">
+    <div class="ed4-modal-top">
+      <div class="ed4-modal-title" id="ed4VideoTitle">Free lesson</div>
+      <button class="ed4-close" type="button" id="ed4VideoClose" aria-label="Close">×</button>
+    </div>
+    <div class="ed4-wistia-wrap" id="ed4WistiaWrap"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var root=document.getElementById('ed4AccordionCourses');
+  if(!root)return;
+  var items=Array.from(root.querySelectorAll('.ed4-item'));
+  items.forEach(function(item){
+    var btn=item.querySelector('.ed4-btn');
+    if(!btn)return;
+    btn.addEventListener('click',function(){
+      var isOpen=item.classList.contains('is-open');
+      items.forEach(function(it){it.classList.remove('is-open');var b=it.querySelector('.ed4-btn');if(b)b.setAttribute('aria-expanded','false');});
+      if(!isOpen){item.classList.add('is-open');btn.setAttribute('aria-expanded','true');}
+    });
+  });
+  var modal=document.getElementById('ed4VideoModal'),closeBtn=document.getElementById('ed4VideoClose'),titleEl=document.getElementById('ed4VideoTitle'),wrap=document.getElementById('ed4WistiaWrap');
+  function openModal(id,title){if(!modal)return;if(titleEl)titleEl.textContent=title;wrap.innerHTML='<iframe src="https://fast.wistia.net/embed/iframe/'+id+'?autoPlay=true&playerColor=000000&fitStrategy=fill" allowtransparency="true" allowfullscreen frameborder="0" allow="autoplay;fullscreen" style="position:absolute;inset:0;width:100%;height:100%;border:0;"><\/iframe>';modal.classList.add('is-open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';if(closeBtn)closeBtn.focus();document.addEventListener('keydown',onKey);}
+  function closeModal(){if(!modal)return;wrap.innerHTML='';modal.classList.remove('is-open');modal.setAttribute('aria-hidden','true');document.body.style.overflow='';document.removeEventListener('keydown',onKey);}
+  function onKey(e){if(e.key==='Escape')closeModal();}
+  document.querySelectorAll('.ed4-free').forEach(function(btn){btn.addEventListener('click',function(){openModal(btn.dataset.wistia,btn.dataset.title);});});
+  if(closeBtn)closeBtn.addEventListener('click',closeModal);
+  if(modal)modal.addEventListener('click',function(e){if(e.target===modal)closeModal();});
+})();
+<\/script>`;
+}
+
 export function buildPage(form, lang, strings, translatedAboutHtml) {
   // strings = { courseLevel, courseTitle, courseSubtitle, ctaText, freeLessonTitle, beyondSuffix, unlimitedTitle, ... }
   const videos = form.wistiaVideos || {};

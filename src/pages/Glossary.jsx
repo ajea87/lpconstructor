@@ -36,8 +36,8 @@ export default function Glossary() {
   }
 
   const cellStyle = {
-    background: '#111',
-    border: '1px solid rgba(255,255,255,0.07)',
+    background: '#1a1a1a',
+    border: '1px solid #2a2a2a',
     borderRadius: 6,
     color: '#fff',
     fontSize: 13,
@@ -81,13 +81,13 @@ export default function Glossary() {
         </div>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-xl" style={{ border: '1px solid #1a1a1a' }}>
+      <div className="mt-6 overflow-x-auto rounded-xl" style={{ border: '1px solid #222' }}>
         <table className="w-full" style={{ borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#0d0d0d', borderBottom: '1px solid #1a1a1a' }}>
-              <th className="text-left px-4 py-3 text-xs font-black uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.3)', minWidth: 200 }}>English</th>
+            <tr style={{ background: '#111', borderBottom: '1px solid #222' }}>
+              <th className="text-left px-4 py-3 text-xs font-black uppercase tracking-wider text-gray-400" style={{ minWidth: 200 }}>English</th>
               {LANGS.map(l => (
-                <th key={l} className="text-left px-4 py-3 text-xs font-black uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.3)', minWidth: 160 }}>
+                <th key={l} className="text-left px-4 py-3 text-xs font-black uppercase tracking-wider text-gray-400" style={{ minWidth: 160 }}>
                   {LANG_LABELS[l]}
                 </th>
               ))}

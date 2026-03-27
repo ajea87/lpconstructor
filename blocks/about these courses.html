@@ -1,0 +1,409 @@
+<style>
+  .ed4-section{
+    background:#f6f3ef;
+    color:#121212;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;
+    padding: 80px 18px 90px;
+  }
+  .ed4-wrap{ max-width: 1080px; margin: 0 auto; }
+
+  .ed4-about{ max-width: 780px; margin: 0 auto 46px; text-align: left; }
+  .ed4-about h2{ margin:0 0 12px; font-size: 34px; font-weight: 900; letter-spacing: -0.02em; color:#111111 !important; }
+  .ed4-rule{ height:1px; background: rgba(0,0,0,0.26); margin: 0 0 18px; width: 420px; max-width: 100%; }
+  .ed4-about p{ margin: 0 0 18px; font-size: 18px; line-height: 1.75; color: rgba(20,20,20,0.75); }
+  .ed4-meta{ margin-top: 18px; font-size: 18px; line-height: 1.7; color: rgba(20,20,20,0.86); }
+  .ed4-meta b{ color:#111; font-weight: 800; }
+
+  .ed4-lessons{ max-width: 780px; margin: 0 auto; text-align: left; }
+  .ed4-lessons h3{ margin:0; font-size: 46px; font-weight: 900; letter-spacing: -0.03em; color:#111111 !important; }
+  .ed4-lessons .sub{ margin-top: 4px; font-size: 18px; font-weight: 700; color: rgba(20,20,20,0.45); }
+  .ed4-lessons .rule{ height:1px; background: rgba(0,0,0,0.24); margin: 14px 0 18px; width: 100%; }
+
+  .ed4-acc{ display:grid; gap: 10px; }
+  .ed4-item{ border-radius: 4px; overflow: hidden; box-shadow: 0 8px 18px rgba(0,0,0,0.10); }
+  .ed4-btn{
+    width:100%; border:none; cursor:pointer; background:#2f3439; color:#fff;
+    padding: 14px 18px; display:flex; align-items:center; justify-content:space-between;
+    gap: 16px; font-size: 20px; font-weight: 800; line-height: 1.2; text-align:left;
+  }
+  .ed4-btn span.title{ display:block; }
+  .ed4-right{ display:flex; align-items:center; gap: 14px; flex: 0 0 auto; white-space: nowrap; }
+  .ed4-course-meta{ font-size: 14px; font-weight: 800; color: rgba(255,255,255,0.65); }
+  .ed4-btn .chev{ font-size: 28px; line-height: 1; opacity: 0.95; transform: translateY(-1px); }
+  .ed4-panel{
+    display:none; background:#ffffff; border: 1px solid rgba(0,0,0,0.12);
+    border-top: none; padding: 10px 0; font-size: 16px; line-height: 1.7; color: rgba(20,20,20,0.82);
+  }
+  .ed4-item.is-open .ed4-panel{ display:block; }
+  .ed4-item.is-open .ed4-btn .chev{ transform: rotate(90deg) translateX(2px); }
+
+  .ed4-lesson{ display:flex; align-items:center; justify-content:space-between; gap: 12px; padding: 10px 18px; }
+  .ed4-lesson + .ed4-lesson{ border-top: 1px solid rgba(0,0,0,0.08); }
+  .ed4-lesson-left{ display:flex; align-items:center; gap: 10px; min-width: 0; }
+  .ed4-ic{ width:18px; height:18px; color: rgba(0,0,0,0.55); flex:0 0 auto; }
+  .ed4-lesson-title{ font-size: 14px; font-weight: 600; color: rgba(20,20,20,0.75); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .ed4-free{
+    border:0; background:transparent; cursor:pointer; display:inline-flex;
+    align-items:center; gap:8px; font-size:13px; font-weight:800; color:#ff0033;
+    padding:4px 2px; flex:0 0 auto; white-space: nowrap;
+  }
+  .ed4-free:hover{ text-decoration: underline; }
+  .ed4-play{
+    width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:999px; background:#ff0033; color:#fff; font-size:10px; line-height:1; padding-left:1px;
+  }
+
+  .ed4-instructor{ max-width: 780px; margin: 60px auto 0; text-align: left; }
+  .ed4-avatar{ width: 92px; height: 92px; border-radius: 999px; overflow:hidden; border: 4px solid rgba(0,0,0,0.18); box-shadow: 0 16px 30px rgba(0,0,0,0.16); background:#ddd; }
+  .ed4-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .ed4-name{ margin: 14px 0 6px; font-size: 32px; font-weight: 900; letter-spacing: -0.02em; color:#111; }
+  .ed4-role{ margin: 0 0 10px; font-size: 16px; font-weight: 800; color: rgba(60, 120, 125, 0.58); }
+  .ed4-instructor-sep{ height:1px; background: rgba(0,0,0,0.22); width: 100%; margin: 10px 0 14px; }
+
+  /* ===== Video modal ===== */
+  .ed4-modal{ position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; padding:18px; z-index:9999; }
+  .ed4-modal.is-open{ display:flex; }
+  .ed4-modal-card{ width:min(920px, 100%); background:#0f0f10; border-radius:12px; overflow:hidden; box-shadow:0 24px 70px rgba(0,0,0,0.45); }
+  .ed4-modal-top{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:rgba(255,255,255,0.06); }
+  .ed4-modal-title{ font-size:13px; font-weight:800; color:rgba(255,255,255,0.85); padding-right:10px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .ed4-close{ border:0; background:transparent; color:#fff; cursor:pointer; font-size:22px; line-height:1; padding:6px 10px; opacity:.85; }
+  .ed4-close:hover{ opacity:1; }
+
+  /* ✅ Wistia wrap in modal */
+  .ed4-wistia-wrap{ width:100%; aspect-ratio: 16 / 9; background:#000; position:relative; }
+  .ed4-wistia-wrap iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; display:block; }
+
+  @media (max-width: 820px){
+    .ed4-about, .ed4-lessons, .ed4-instructor{ max-width: 680px; }
+    .ed4-lessons h3{ font-size: 40px; }
+    .ed4-btn{ font-size: 18px; padding: 13px 16px; }
+    .ed4-btn .chev{ font-size: 26px; }
+    .ed4-name{ font-size: 28px; }
+  }
+  @media (max-width: 600px){
+    .ed4-section{ padding: 54px 14px 70px; }
+    .ed4-about{ margin-bottom: 34px; }
+    .ed4-about h2{ font-size: 26px; }
+    .ed4-rule{ width: 260px; margin-bottom: 14px; }
+    .ed4-about p{ font-size: 16px; margin-bottom: 14px; }
+    .ed4-meta{ font-size: 16px; }
+    .ed4-lessons h3{ font-size: 34px; }
+    .ed4-lessons .sub{ font-size: 16px; }
+    .ed4-btn{ font-size: 16px; padding: 12px 14px; }
+    .ed4-panel{ font-size: 15px; }
+    .ed4-avatar{ width: 84px; height: 84px; }
+    .ed4-name{ font-size: 26px; }
+  }
+</style>
+
+<section class="ed4-section">
+  <div class="ed4-wrap">
+
+    <!-- ABOUT -->
+    <div class="ed4-about">
+      <h2>About these courses</h2>
+      <div class="ed4-rule"></div>
+      <p><b>Your bachata won't change with more steps.</b><br/>It will change when you understand where it comes from.</p>
+      <p>That's why I created these courses.<br/>I'm <b>Carolina Rosa</b>, and after years on the dance floor, I kept seeing the same thing: talented dancers executing beautifully… but without identity. Correct. Clean. But disconnected from the essence of traditional bachata.</p>
+      <p>These courses are not about collecting sequences. They are about connection, posture, weight, intention, syncopation, and musical awareness. About training your body to feel the music, not just follow it. About respecting the roots of traditional bachata while discovering your own voice inside it.</p>
+      <p>You will learn to use your body fully.<br/>To understand syncopation as a language.<br/>To listen before reacting.<br/>To move with authenticity instead of imitation.</p>
+      <p>This is part of my legacy.<br/>Not just steps… but a way of dancing that lives in the body, in the culture, and in the person who dances it.<br/><br/>I will give you the foundation.<br/>The music will give you direction.<br/>And your identity will do the rest.</p>
+      <div class="ed4-meta">
+        Instructor: <b>Carolina Rosa</b><br/>
+        Lessons: <b>30</b><br/>
+        Category: <b>Traditional Bachata</b><br/>
+      </div>
+    </div>
+
+    <!-- COURSES -->
+    <div class="ed4-lessons">
+      <h3>Courses</h3>
+      <div class="rule"></div>
+
+      <div class="ed4-acc" id="ed4AccordionCourses">
+
+        <!-- COURSE 1 -->
+        <div class="ed4-item">
+          <button class="ed4-btn" type="button" aria-expanded="false">
+            <span class="title">Movement and Body Posture in Traditional Bachata | Carolina Rosa | All levels</span>
+            <span class="ed4-right">
+              <span class="ed4-course-meta">7 lessons</span>
+              <span class="chev">›</span>
+            </span>
+          </button>
+          <div class="ed4-panel">
+
+            <div class="ed4-lesson">
+              <div class="ed4-lesson-left">
+                <span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/></svg></span>
+                <span class="ed4-lesson-title">Welcome to this course</span>
+              </div>
+              <!-- ✅ Wistia ID: av8sbip9pd -->
+              <button class="ed4-free" type="button" data-wistia="av8sbip9pd" data-title="Welcome to this course (FREE LESSON)">
+                <span class="ed4-play" aria-hidden="true">▶</span> Free lesson
+              </button>
+            </div>
+
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 1 - Body Posture &amp; Position</span></div></div>
+
+            <div class="ed4-lesson">
+              <div class="ed4-lesson-left">
+                <span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="ed4-lesson-title">Lesson 2 - Hip Motion</span>
+              </div>
+              <!-- ✅ Wistia ID: bsqtbsbig6 -->
+              <button class="ed4-free" type="button" data-wistia="bsqtbsbig6" data-title="Lesson 2 - Hip Motion (FREE LESSON)">
+                <span class="ed4-play" aria-hidden="true">▶</span> Free lesson
+              </button>
+            </div>
+
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 3 - Shoulder Technique</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Dragging Lesson 3 - Shoulder Technique</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 4 - Applying Movement to Basic Steps</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 5 - Arm Technique</span></div></div>
+
+          </div>
+        </div>
+
+        <!-- COURSE 2 -->
+        <div class="ed4-item">
+          <button class="ed4-btn" type="button" aria-expanded="false">
+            <span class="title">Understanding Syncopation (Part One) | Carolina Rosa | Intermediate</span>
+            <span class="ed4-right">
+              <span class="ed4-course-meta">8 lessons</span>
+              <span class="chev">›</span>
+            </span>
+          </button>
+          <div class="ed4-panel">
+
+            <div class="ed4-lesson">
+              <div class="ed4-lesson-left">
+                <span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/></svg></span>
+                <span class="ed4-lesson-title">Welcome to this course</span>
+              </div>
+              <!-- ✅ Wistia ID: z13hau2avn -->
+              <button class="ed4-free" type="button" data-wistia="z13hau2avn" data-title="Welcome to this course (FREE LESSON)">
+                <span class="ed4-play" aria-hidden="true">▶</span> Free lesson
+              </button>
+            </div>
+
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 1 - Syncopations on Counts 1 and 2</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 2 - Tikitá Variations</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 3 - Syncopations on Counts 3 and 4</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 4 - Syncopations on Counts 3 and 4 — Variations</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 5 - The Universal Touch — Technique</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 6 - Combination 1</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 7 - Combination 2</span></div></div>
+
+          </div>
+        </div>
+
+        <!-- COURSE 3 -->
+        <div class="ed4-item">
+          <button class="ed4-btn" type="button" aria-expanded="false">
+            <span class="title">Syncopation with Body Movement (Part Two) | Carolina Rosa | Advanced</span>
+            <span class="ed4-right">
+              <span class="ed4-course-meta">8 lessons</span>
+              <span class="chev">›</span>
+            </span>
+          </button>
+          <div class="ed4-panel">
+
+            <div class="ed4-lesson">
+              <div class="ed4-lesson-left">
+                <span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/></svg></span>
+                <span class="ed4-lesson-title">Welcome to this course</span>
+              </div>
+              <!-- ✅ Wistia ID: 8irtt21cio -->
+              <button class="ed4-free" type="button" data-wistia="8irtt21cio" data-title="Welcome to this course (FREE LESSON)">
+                <span class="ed4-play" aria-hidden="true">▶</span> Free lesson
+              </button>
+            </div>
+
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 1 - Crossed Tikitá on Counts 1 and 2</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 2 - Tikitá Variations</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 3 - Cha Cha Variations</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 4 - Slide</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 5 - The Universal Touch — Technique</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 6 - Combination 1</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 7 - Combination 2</span></div></div>
+
+          </div>
+        </div>
+
+        <!-- COURSE 4 -->
+        <div class="ed4-item">
+          <button class="ed4-btn" type="button" aria-expanded="false">
+            <span class="title">Musicality in the Carolina Style | Carolina Rosa | Intermediate</span>
+            <span class="ed4-right">
+              <span class="ed4-course-meta">5 lessons</span>
+              <span class="chev">›</span>
+            </span>
+          </button>
+          <div class="ed4-panel">
+
+            <div class="ed4-lesson">
+              <div class="ed4-lesson-left">
+                <span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/></svg></span>
+                <span class="ed4-lesson-title">Welcome to this course</span>
+              </div>
+              <!-- ✅ Wistia ID: 398tu590wp -->
+              <button class="ed4-free" type="button" data-wistia="398tu590wp" data-title="Welcome to this course (FREE LESSON)">
+                <span class="ed4-play" aria-hidden="true">▶</span> Free lesson
+              </button>
+            </div>
+
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 1 - Identifying Syncopations</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 2 - Build Your Musical Phrase in Your Mind — Level 1</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 3 - Build Your Musical Phrase in Your Mind — Level 2</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Lesson 4 - Build Your Musical Phrase in Your Mind — Level 3</span></div></div>
+
+          </div>
+        </div>
+
+        <!-- COURSE 5: CHALLENGE -->
+        <div class="ed4-item">
+          <button class="ed4-btn" type="button" aria-expanded="false">
+            <span class="title">Challenge | Carolina Rosa | Intermediate</span>
+            <span class="ed4-right">
+              <span class="ed4-course-meta">3 lessons</span>
+              <span class="chev">›</span>
+            </span>
+          </button>
+          <div class="ed4-panel">
+
+            <div class="ed4-lesson">
+              <div class="ed4-lesson-left">
+                <span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/></svg></span>
+                <span class="ed4-lesson-title">Welcome to this course</span>
+              </div>
+              <!-- ✅ Wistia ID: e8046dpzqd -->
+              <button class="ed4-free" type="button" data-wistia="e8046dpzqd" data-title="Welcome to this course (FREE LESSON)">
+                <span class="ed4-play" aria-hidden="true">▶</span> Free lesson
+              </button>
+            </div>
+
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Challenge 1st part</span></div></div>
+            <div class="ed4-lesson"><div class="ed4-lesson-left"><span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ed4-lesson-title">Challenge 2nd part</span></div></div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- INSTRUCTOR -->
+    <div class="ed4-instructor">
+      <div class="ed4-avatar">
+        <img src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/075541b-fef2-3ed-da35-e3aaff778682_Carolina_Rosa.jpg.jpeg" alt="Carolina Rosa"/>
+      </div>
+      <div class="ed4-name">Carolina Rosa</div>
+      <div class="ed4-role">Traditional Bachata Artist &amp; Educator</div>
+      <div class="ed4-instructor-sep"></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ✅ VIDEO POPUP — Wistia iframe black -->
+<div class="ed4-modal" id="ed4VideoModal" aria-hidden="true">
+  <div class="ed4-modal-card" role="dialog" aria-modal="true" aria-label="Free lesson video">
+    <div class="ed4-modal-top">
+      <div class="ed4-modal-title" id="ed4VideoTitle">Free lesson</div>
+      <button class="ed4-close" type="button" id="ed4VideoClose" aria-label="Close">×</button>
+    </div>
+    <!-- ✅ iframe injected on open -->
+    <div class="ed4-wistia-wrap" id="ed4WistiaWrap"></div>
+  </div>
+</div>
+
+<script>
+  (function () {
+
+    /* ── Accordion ── */
+    const root = document.getElementById('ed4AccordionCourses');
+    if (!root) return;
+
+    const items = Array.from(root.querySelectorAll('.ed4-item'));
+    items.forEach((item) => {
+      const btn = item.querySelector('.ed4-btn');
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const isOpen = item.classList.contains('is-open');
+        items.forEach((it) => {
+          it.classList.remove('is-open');
+          const b = it.querySelector('.ed4-btn');
+          if (b) b.setAttribute('aria-expanded', 'false');
+        });
+        if (!isOpen) {
+          item.classList.add('is-open');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+
+    /* ── Modal Wistia ── */
+    const modal    = document.getElementById('ed4VideoModal');
+    const closeBtn = document.getElementById('ed4VideoClose');
+    const titleEl  = document.getElementById('ed4VideoTitle');
+    const wrap     = document.getElementById('ed4WistiaWrap');
+
+    function openVideo(wistiaId, title) {
+      if (!modal || !wrap) return;
+      if (titleEl) titleEl.textContent = title || 'Free lesson';
+
+      // ✅ playerColor=000000 → black controls
+      wrap.innerHTML =
+        '<iframe src="https://fast.wistia.net/embed/iframe/' + wistiaId +
+        '?autoPlay=true&playerColor=000000&fitStrategy=fill" ' +
+        'allowtransparency="true" allowfullscreen frameborder="0" scrolling="no" ' +
+        'allow="autoplay; fullscreen" ' +
+        'style="position:absolute;inset:0;width:100%;height:100%;border:0;">' +
+        '</iframe>';
+
+      modal.classList.add('is-open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      if (closeBtn) closeBtn.focus();
+      document.addEventListener('keydown', onKeyDown);
+    }
+
+    function closeVideo() {
+      if (!modal || !wrap) return;
+      wrap.innerHTML = '';
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', onKeyDown);
+    }
+
+    function onKeyDown(e) {
+      if (e.key === 'Escape') closeVideo();
+    }
+
+    root.querySelectorAll('.ed4-free').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id    = btn.getAttribute('data-wistia');
+        const title = btn.getAttribute('data-title') || 'Free lesson';
+        if (id) openVideo(id, title);
+      });
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeVideo();
+    });
+
+    if (modal) modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeVideo();
+    });
+
+    const card = modal ? modal.querySelector('.ed4-modal-card') : null;
+    if (card) card.addEventListener('click', (e) => e.stopPropagation());
+
+  })();
+</script>

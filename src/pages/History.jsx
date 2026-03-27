@@ -79,12 +79,12 @@ export default function History() {
           <div
             key={entry.id}
             className="rounded-xl p-5"
-            style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}
+            style={{ background: '#111', border: '1px solid #222' }}
           >
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
                 <p className="font-black text-base">{entry.artistName || 'Unknown Artist'}</p>
-                <p className="text-xs font-mono mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                <p className="text-xs font-mono mt-0.5 text-gray-400">
                   {entry.pageSlug || 'no-slug'}
                 </p>
               </div>

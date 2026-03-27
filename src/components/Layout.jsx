@@ -35,7 +35,7 @@ export default function Layout() {
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
                   isActive
                     ? 'bg-white text-black'
-                    : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`
               }
             >
@@ -47,7 +47,7 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="px-5 py-4 border-t" style={{ borderColor: '#1a1a1a' }}>
-          <p className="text-xs font-medium" style={{ color: '#333' }}>LP Builder v1.0</p>
+          <p className="text-xs font-medium text-gray-600">LP Builder v1.0</p>
         </div>
       </aside>
 

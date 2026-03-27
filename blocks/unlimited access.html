@@ -1,0 +1,376 @@
+<style>
+  /* ===== Unlimited Access Marquee Grid (3 rows, brick + slow scroll) ===== */
+  .ed-uac {
+    position: relative;
+    background: #000;
+    color: #fff;
+    padding: 72px 0 62px;
+    overflow: hidden;
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    /* IMPORTANT: prevent text/image selection */
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Overall premium vignette */
+  .ed-uac::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background: radial-gradient(1200px 420px at 50% 32%, rgba(0,0,0,0.10), rgba(0,0,0,0.70));
+    pointer-events:none;
+    z-index: 1;
+  }
+  .ed-uac::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      linear-gradient(to bottom, rgba(0,0,0,0.92), rgba(0,0,0,0) 34%),
+      linear-gradient(to top, rgba(0,0,0,0.86), rgba(0,0,0,0) 34%);
+    pointer-events:none;
+    z-index: 2;
+  }
+
+  /* Side fade so rows blend into screen edges */
+  .ed-uac__sidefade{
+    position:absolute;
+    top:0; bottom:0;
+    width: 120px;
+    pointer-events:none;
+    z-index: 6;
+  }
+  .ed-uac__sidefade.left{
+    left:0;
+    background: linear-gradient(to right, rgba(0,0,0,0.98), rgba(0,0,0,0));
+  }
+  .ed-uac__sidefade.right{
+    right:0;
+    background: linear-gradient(to left, rgba(0,0,0,0.98), rgba(0,0,0,0));
+  }
+
+  /* ===== FIXED OVERLAY (no hover, always on) ===== */
+  .ed-uac__overlay{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index: 7;
+    opacity: 0.22; /* adjust for more/less darkness */
+    background:
+      radial-gradient(900px 380px at 50% 55%, rgba(0,0,0,0.18), rgba(0,0,0,0.00) 55%),
+      linear-gradient(to bottom, rgba(0,0,0,0.22), rgba(0,0,0,0.10) 40%, rgba(0,0,0,0.28));
+  }
+
+  /* ===== Header CTA (sits into first row) ===== */
+  .ed-uac__header{
+    position: relative;
+    z-index: 9;
+    text-align: center;
+    max-width: 1100px;
+    margin: 0 auto 0;
+    padding: 0 16px;
+    transform: translateY(34px);
+  }
+  .ed-uac__title{
+    margin: 0 0 16px;
+    font-size: 44px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+  .ed-uac__btn{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 46px;
+    padding: 0 26px;
+    border-radius: 12px;
+    background: #fff;
+    color: #111 !important;
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 16px;
+    border: 2px solid #fff;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.55);
+  }
+  .ed-uac__btn:hover{ opacity: 0.92; }
+
+  /* Rows container: FULL BLEED */
+  .ed-uac__rows{
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    margin-top: -18px;
+  }
+
+  .ed-row{
+    position: relative;
+    overflow: hidden;
+    margin: 14px 0;
+  }
+
+  /* Stronger fade over the FIRST row */
+  .ed-row--topfade::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.94), rgba(0,0,0,0.10) 70%, rgba(0,0,0,0.70));
+    pointer-events:none;
+    z-index: 8;
+  }
+
+  /* Brick offset for middle row */
+  .ed-row--offset .ed-track{
+    transform: translateX(-90px);
+  }
+
+  .ed-track{
+    display: flex;
+    width: max-content;
+    gap: 16px;
+    will-change: transform;
+
+    /* IMPORTANT: keep animation running even when hovered */
+    animation-play-state: running !important;
+  }
+
+  /* Tile proportions */
+  .ed-tile{
+    position: relative;
+    flex: 0 0 auto;
+    width: 290px;
+    height: 160px;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #111;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.06);
+    transform: translateZ(0);
+    opacity: 0.92;
+
+    /* IMPORTANT: avoid selection / dragging behaviour */
+    -webkit-user-drag: none;
+    user-drag: none;
+  }
+  .ed-tile img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: saturate(1.05) contrast(1.02);
+    transform: scale(1.01);
+
+    /* IMPORTANT: avoid selection / dragging behaviour */
+    -webkit-user-drag: none;
+    user-drag: none;
+    pointer-events: none; /* prevents hover selecting images */
+  }
+
+  /* IMPORTANT: remove any tile hover effects completely */
+  .ed-tile::after{ display:none !important; }
+
+  /* Animations */
+  @keyframes ed-scroll-rtl {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @keyframes ed-scroll-ltr {
+    from { transform: translateX(-50%); }
+    to   { transform: translateX(0); }
+  }
+  .ed-row--rtl .ed-track{ animation: ed-scroll-rtl 78s linear infinite; }
+  .ed-row--ltr .ed-track{ animation: ed-scroll-ltr 84s linear infinite; }
+
+  /* Responsive */
+  @media (max-width: 980px){
+    .ed-uac__title{ font-size: 36px; }
+    .ed-uac__header{ transform: translateY(28px); }
+    .ed-uac__rows{ margin-top: -14px; }
+    .ed-tile{ width: 250px; height: 140px; border-radius: 16px; }
+    .ed-row{ margin: 12px 0; }
+    .ed-track{ gap: 14px; }
+    .ed-row--offset .ed-track{ transform: translateX(-70px); }
+    .ed-uac__sidefade{ width: 90px; }
+    .ed-uac__overlay{ opacity: 0.20; }
+  }
+  @media (max-width: 600px){
+    .ed-uac{ padding: 54px 0 48px; }
+    .ed-uac__title{ font-size: 28px; }
+    .ed-uac__header{ transform: translateY(18px); }
+    .ed-uac__rows{ margin-top: -10px; }
+    .ed-uac__btn{ height: 44px; padding: 0 22px; font-size: 15px; }
+    .ed-tile{ width: 210px; height: 120px; border-radius: 14px; }
+    .ed-track{ gap: 12px; }
+    .ed-row--offset .ed-track{ transform: translateX(-55px); }
+    .ed-row--rtl .ed-track{ animation-duration: 62s; }
+    .ed-row--ltr .ed-track{ animation-duration: 68s; }
+    .ed-uac__sidefade{ width: 70px; }
+    .ed-uac__overlay{ opacity: 0.18; }
+  }
+
+  /* ===== Minimal Footer (new) ===== */
+  .ed-footer{
+    background:#000;
+    color:rgba(255,255,255,0.60);
+    font-family:'Montserrat',-apple-system,BlinkMacSystemFont,sans-serif;
+    padding: 18px 16px 26px;
+    text-align:center;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .ed-footer__wrap{
+    max-width:1100px;
+    margin:0 auto;
+  }
+  .ed-footer__divider{
+    height:1px;
+    background:rgba(255,255,255,0.08);
+    margin: 0 auto 14px;
+    width: min(820px, 100%);
+  }
+  .ed-footer__logo{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-bottom: 8px;
+    opacity: 0.85;
+  }
+  .ed-footer__logo img{
+    height: 50px;
+    width:auto;
+    display:block;
+    opacity: 0.82;
+    filter: grayscale(100%) contrast(1.05);
+    -webkit-user-drag:none;
+    user-drag:none;
+    pointer-events:none;
+  }
+  .ed-footer__text{
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+  }
+</style>
+
+<section class="ed-uac">
+  <!-- side fades -->
+  <div class="ed-uac__sidefade left" aria-hidden="true"></div>
+  <div class="ed-uac__sidefade right" aria-hidden="true"></div>
+
+  <!-- fixed overlay -->
+  <div class="ed-uac__overlay" aria-hidden="true"></div>
+
+  <!-- CTA -->
+  <div class="ed-uac__header">
+    <h2 class="ed-uac__title">Unlimited Access to all Courses</h2>
+    <a class="ed-uac__btn" href="https://academy.ermesdance.com/pricing" target="_blank" rel="noopener">
+      Get Started for 8€/month
+    </a>
+  </div>
+
+  <div class="ed-uac__rows" aria-label="Course covers marquee grid">
+    <!-- ROW 1 (LTR) -->
+    <div class="ed-row ed-row--ltr ed-row--topfade">
+      <div class="ed-track">
+        <!-- set A -->
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/1a50f35-bf36-0c71-0b80-5a78eeb37b6_PORTADA_ALFONOS_Y_MONICA_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/720ca8f-005c-3e60-d53a-a2ed1c3425_PORTADA_ALFONOS_Y_MONICA_02_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/14a02c-f05-7bd-2d2-a7dbed84cb15_PORTADA_ALFONOS_Y_MONICA_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/4c2ee72-3a68-d8bd-c433-6ef2afa62306_PORTADA_ALFONOS_Y_MONICA_04_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/7f1350-d72f-0d68-b40f-b17be08c0753_PORTADA_ANNA_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/c25fbfa-8bf7-4b5-d60f-eba3eeb58fa_PORTADA_ANNA_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/dbbf31d-3b28-817b-6cd3-f425d23a6ec_PORTADA_ANNA_02_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/ef2aa5f-133d-dec1-f6d1-762674648e4_PORTADA_ANNA_04.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/552c6ed-db80-aef-a8b5-81348ffddf51_PORTADA_JOAQUIN_04.jpg"></div>
+
+        <!-- set B -->
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/1a50f35-bf36-0c71-0b80-5a78eeb37b6_PORTADA_ALFONOS_Y_MONICA_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/720ca8f-005c-3e60-d53a-a2ed1c3425_PORTADA_ALFONOS_Y_MONICA_02_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/14a02c-f05-7bd-2d2-a7dbed84cb15_PORTADA_ALFONOS_Y_MONICA_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/4c2ee72-3a68-d8bd-c433-6ef2afa62306_PORTADA_ALFONOS_Y_MONICA_04_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/7f1350-d72f-0d68-b40f-b17be08c0753_PORTADA_ANNA_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/c25fbfa-8bf7-4b5-d60f-eba3eeb58fa_PORTADA_ANNA_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/dbbf31d-3b28-817b-6cd3-f425d23a6ec_PORTADA_ANNA_02_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/ef2aa5f-133d-dec1-f6d1-762674648e4_PORTADA_ANNA_04.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/552c6ed-db80-aef-a8b5-81348ffddf51_PORTADA_JOAQUIN_04.jpg"></div>
+      </div>
+    </div>
+
+    <!-- ROW 2 (RTL + brick offset) -->
+    <div class="ed-row ed-row--rtl ed-row--offset">
+      <div class="ed-track">
+        <!-- set A -->
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/734626-4432-05cc-7d85-e2ed6f8ff54_PORTADA_JOAQUIN_03.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/ab72fef-deb-1573-0d15-65522f4c408_PORTADA_JOAQUIN_02.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/10013-2418-fe12-1e8-14df8f4e7d82_PORTADA_JOAQUIN_01.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/fb0e488-64d-048d-d00b-27b84a586fb5_PORTADA_IDAIRA_Y_ENOCH_02_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/ff118ad-086e-3528-b124-6f4e7f553b4_PORTADA_IDAIRA_Y_ENOCH_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/2adc0d0-882-4887-acef-74503216c63d_PORTADA_IDAIRA_Y_ENOCH_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/c2febde-f774-b1e3-efd0-f4b1d08b70c7_PORTADA_CHARLIE_Y_VERO_04_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/e03c844-e110-844-eaf-31f23e0634_PORTADA_CHARLIE_Y_VERO_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/1aea0a-b1d3-33ab-fc7b-71ec8d474ab_PORTADA_CHARLIE_Y_VERO_02_english.jpg"></div>
+
+        <!-- set B -->
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/734626-4432-05cc-7d85-e2ed6f8ff54_PORTADA_JOAQUIN_03.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/ab72fef-deb-1573-0d15-65522f4c408_PORTADA_JOAQUIN_02.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/10013-2418-fe12-1e8-14df8f4e7d82_PORTADA_JOAQUIN_01.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/fb0e488-64d-048d-d00b-27b84a586fb5_PORTADA_IDAIRA_Y_ENOCH_02_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/ff118ad-086e-3528-b124-6f4e7f553b4_PORTADA_IDAIRA_Y_ENOCH_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/2adc0d0-882-4887-acef-74503216c63d_PORTADA_IDAIRA_Y_ENOCH_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/c2febde-f774-b1e3-efd0-f4b1d08b70c7_PORTADA_CHARLIE_Y_VERO_04_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/e03c844-e110-844-eaf-31f23e0634_PORTADA_CHARLIE_Y_VERO_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/1aea0a-b1d3-33ab-fc7b-71ec8d474ab_PORTADA_CHARLIE_Y_VERO_02_english.jpg"></div>
+      </div>
+    </div>
+
+    <!-- ROW 3 (LTR) -->
+    <div class="ed-row ed-row--ltr">
+      <div class="ed-track">
+        <!-- set A -->
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/1b5c8f0-c6b2-f5d-65bd-c2a2046c5ea_PORTADA_CHARLIE_Y_VERO_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/e5ff8ec-1535-66cd-7e4d-ae5d072a0cd_PORTADA_IDAIRA_04_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/238aaf-5847-2d6-b1-8a6af26ce75_PORTADA_IDAIRA_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/86b831a-74f0-5da-067e-e7777c56a23_PORTADA_IDAIRA_02_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/61a6b07-23bf-574-5a5b-3ff68a482f70_PORTADA_IDAIRA_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/3a71e4f-778c-4df7-a4b-1cfc321e21f_PORTADA_JUDITH_04_english_copia.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/c6e6d-8127-1ecb-d8-b5251bfaba46_PORTADA_JUDITH_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/eaa46c6-ecaa-a874-d472-b5612a1430_PORTADA_JUDITH_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/8de5cfc-ffe-a33a-6f37-00128eb6a4f3_PORTADA_JUDITH_02_english.jpg"></div>
+
+        <!-- set B -->
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/1b5c8f0-c6b2-f5d-65bd-c2a2046c5ea_PORTADA_CHARLIE_Y_VERO_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/e5ff8ec-1535-66cd-7e4d-ae5d072a0cd_PORTADA_IDAIRA_04_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/238aaf-5847-2d6-b1-8a6af26ce75_PORTADA_IDAIRA_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/86b831a-74f0-5da-067e-e7777c56a23_PORTADA_IDAIRA_02_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/61a6b07-23bf-574-5a5b-3ff68a482f70_PORTADA_IDAIRA_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/3a71e4f-778c-4df7-a4b-1cfc321e21f_PORTADA_JUDITH_04_english_copia.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/c6e6d-8127-1ecb-d8-b5251bfaba46_PORTADA_JUDITH_03_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/eaa46c6-ecaa-a874-d472-b5612a1430_PORTADA_JUDITH_01_english.jpg"></div>
+        <div class="ed-tile"><img alt="" src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/8de5cfc-ffe-a33a-6f37-00128eb6a4f3_PORTADA_JUDITH_02_english.jpg"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Footer (new) ===== -->
+<footer class="ed-footer" role="contentinfo" aria-label="Footer">
+  <div class="ed-footer__wrap">
+    <div class="ed-footer__divider" aria-hidden="true"></div>
+
+    <div class="ed-footer__logo" aria-hidden="true">
+      <img
+        src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2164751305/settings_images/a873d5-a7a4-e2ba-0222-2a6224428c21_2946885f-ffea-485a-9de3-55c9ebec76f1.png"
+        alt=""
+        loading="lazy"
+      />
+    </div>
+
+    <div class="ed-footer__text">
+      © 2026 Ermes Dance Academy. All rights reserved.
+    </div>
+  </div>
+</footer>
