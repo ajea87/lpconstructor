@@ -41,10 +41,11 @@ export default function History() {
 
   function downloadOne(entry, lang) {
     const slug = entry.pageSlug || 'lp-artista';
+    const fname = entry.enOnly && lang === 'en' ? `${slug}.html` : `${slug}${FILE_SUFFIX[lang]}.html`;
     const blob = new Blob([entry.pages[lang]], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `${slug}${FILE_SUFFIX[lang]}.html`; a.click();
+    a.href = url; a.download = fname; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -88,7 +89,12 @@ export default function History() {
                   {entry.pageSlug || 'no-slug'}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-right flex flex-col items-end gap-1">
+                {entry.enOnly && (
+                  <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.45)' }}>
+                    EN only
+                  </span>
+                )}
                 <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
                   {formatDate(entry.createdAt)}
                 </p>
@@ -106,13 +112,15 @@ export default function History() {
                   {FLAG[lang]} {lang.toUpperCase()}
                 </button>
               ))}
-              <button
-                onClick={() => downloadZip(entry)}
-                className="h-8 px-4 rounded-lg text-xs font-bold"
-                style={{ background: '#fff', color: '#000' }}
-              >
-                ⬇ ZIP
-              </button>
+              {!entry.enOnly && (
+                <button
+                  onClick={() => downloadZip(entry)}
+                  className="h-8 px-4 rounded-lg text-xs font-bold"
+                  style={{ background: '#fff', color: '#000' }}
+                >
+                  ⬇ ZIP
+                </button>
+              )}
               <button
                 onClick={() => handleDelete(entry.id)}
                 className="h-8 px-3 rounded-lg text-xs font-bold ml-auto"

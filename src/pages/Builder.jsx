@@ -376,7 +376,8 @@ export default function Builder() {
   const [form, setForm] = useState(DEFAULT_FORM);
   const [step, setStep] = useState(0);        // 0 = idle, 1-4 = progress
   const [error, setError] = useState('');
-  const [pages, setPages] = useState(null);   // { en, es, it, fr, de }
+  const [pages, setPages] = useState(null);   // { en, es, it, fr, de } or { en }
+  const [enOnly, setEnOnly] = useState(false);
   const [activeTab, setActiveTab] = useState('en');
   const [toast, setToast] = useState('');
 
@@ -460,12 +461,38 @@ export default function Builder() {
       }
 
       setPages(result);
+      setEnOnly(false);
       setActiveTab('en');
       setStep(4);
     } catch (err) {
       setError(err.message || String(err));
       setStep(0);
     }
+  }
+
+  function generateEnOnly() {
+    setError('');
+    const enAboutHtml = buildAboutHtmlStr(form.aboutData);
+    const enStrings = {
+      courseLevel:      form.courseLevel,
+      courseTitle:      form.courseTitle,
+      courseSubtitle:   form.courseSubtitle,
+      ctaText:          form.ctaText,
+      freeLessonTitle:  form.freeLessonTitle,
+      beyondSuffix:     'You Also Get',
+      unlimitedTitle:   'Unlimited Access to all Courses',
+      activateSound:    'Activate Sound',
+      freeLessonBtn:    'Free Lesson',
+      coursesLabel:     'Courses',
+      biteLabel:        'Bite-Sized Classes',
+      accessLabel:      'Access',
+      allRightsReserved:'All rights reserved.',
+    };
+    const html = buildPage(form, 'en', enStrings, enAboutHtml);
+    setPages({ en: html });
+    setEnOnly(true);
+    setActiveTab('en');
+    setStep(4);
   }
 
   async function downloadZip() {
@@ -482,7 +509,7 @@ export default function Builder() {
 
   function downloadOne(lang) {
     const slug = form.pageSlug || 'lp-artista';
-    const fname = `${slug}${FILE_SUFFIX[lang]}.html`;
+    const fname = enOnly && lang === 'en' ? `${slug}.html` : `${slug}${FILE_SUFFIX[lang]}.html`;
     const blob = new Blob([pages[lang]], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = fname; a.click();
@@ -498,6 +525,7 @@ export default function Builder() {
       artistName: form.artistName,
       pageSlug: form.pageSlug,
       pages,
+      enOnly,
     });
     setToast('Saved to history ✓');
   }
@@ -608,18 +636,37 @@ export default function Builder() {
         </div>
       )}
 
-      {/* Generate button */}
+      {/* Generate buttons */}
       {!busy && step !== 4 && (
-        <button
-          onClick={generate}
-          disabled={busy}
-          className="w-full h-12 rounded-xl font-black text-base tracking-wide transition-opacity"
-          style={{ background: '#fff', color: '#000' }}
-          onMouseEnter={e => (e.target.style.opacity = '0.88')}
-          onMouseLeave={e => (e.target.style.opacity = '1')}
-        >
-          ⚡ Generate in 5 languages
-        </button>
+        <div className="flex gap-3">
+          <div className="relative flex-1 group">
+            <button
+              onClick={() => {
+                const hasKey = provider === 'anthropic' ? !!getAnthropicKey() : !!getOpenAIKey();
+                if (!hasKey) {
+                  setError(`Enter your ${provider === 'anthropic' ? 'Anthropic' : 'OpenAI'} API key to generate in 5 languages.`);
+                  return;
+                }
+                generate();
+              }}
+              className="w-full h-12 rounded-xl font-black text-base tracking-wide transition-opacity"
+              style={{ background: '#fff', color: '#000' }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
+              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+            >
+              ⚡ Generate in 5 languages
+            </button>
+          </div>
+          <button
+            onClick={generateEnOnly}
+            className="h-12 px-5 rounded-xl font-black text-sm tracking-wide transition-opacity whitespace-nowrap"
+            style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '0.72')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+          >
+            → English only
+          </button>
+        </div>
       )}
 
       {/* Progress */}
@@ -632,7 +679,7 @@ export default function Builder() {
         <div className="mt-8">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <p className="text-sm font-bold text-gray-400">
-              ✓ 5 pages generated
+              {enOnly ? '✓ English page generated' : '✓ 5 pages generated'}
             </p>
             <div className="flex gap-2 flex-wrap">
               <button
@@ -642,13 +689,15 @@ export default function Builder() {
               >
                 Save to History
               </button>
-              <button
-                onClick={downloadZip}
-                className="h-8 px-4 rounded-lg text-xs font-bold transition-colors"
-                style={{ background: '#fff', color: '#000' }}
-              >
-                ⬇ Download all 5 (ZIP)
-              </button>
+              {!enOnly && (
+                <button
+                  onClick={downloadZip}
+                  className="h-8 px-4 rounded-lg text-xs font-bold transition-colors"
+                  style={{ background: '#fff', color: '#000' }}
+                >
+                  ⬇ Download all 5 (ZIP)
+                </button>
+              )}
               <button
                 onClick={() => setStep(0)}
                 className="h-8 px-4 rounded-lg text-xs font-bold"
@@ -660,30 +709,32 @@ export default function Builder() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 mb-4" style={{ borderBottom: '1px solid #1a1a1a' }}>
-            {LANGS.map(({ key, label, flag }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className="px-4 py-2.5 text-sm font-bold transition-colors"
-                style={{
-                  borderBottom: activeTab === key ? '2px solid #fff' : '2px solid transparent',
-                  marginBottom: -1,
-                  color: activeTab === key ? '#fff' : 'rgba(255,255,255,0.4)',
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: activeTab === key ? '2px solid #fff' : '2px solid transparent',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  paddingBottom: 10,
-                }}
-              >
-                {flag} {label}
-              </button>
-            ))}
-          </div>
+          {!enOnly && (
+            <div className="flex gap-1 mb-4" style={{ borderBottom: '1px solid #1a1a1a' }}>
+              {LANGS.map(({ key, label, flag }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className="px-4 py-2.5 text-sm font-bold transition-colors"
+                  style={{
+                    borderBottom: activeTab === key ? '2px solid #fff' : '2px solid transparent',
+                    marginBottom: -1,
+                    color: activeTab === key ? '#fff' : 'rgba(255,255,255,0.4)',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: activeTab === key ? '2px solid #fff' : '2px solid transparent',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    paddingBottom: 10,
+                  }}
+                >
+                  {flag} {label}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {LANGS.map(({ key }) => activeTab === key && (
+          {(enOnly ? [{ key: 'en' }] : LANGS).map(({ key }) => activeTab === key && (
             <div key={key}>
               <div className="flex gap-2 mb-3 flex-wrap">
                 <button
@@ -698,7 +749,7 @@ export default function Builder() {
                   className="h-8 px-3 rounded-lg text-xs font-bold"
                   style={{ background: 'rgba(255,255,255,0.08)', color: '#fff' }}
                 >
-                  ⬇ {`${form.pageSlug || 'lp-artista'}${FILE_SUFFIX[key]}.html`}
+                  ⬇ {enOnly ? `${form.pageSlug || 'lp-artista'}.html` : `${form.pageSlug || 'lp-artista'}${FILE_SUFFIX[key]}.html`}
                 </button>
               </div>
               <textarea
