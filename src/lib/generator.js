@@ -494,6 +494,25 @@ ${translatedAboutHtml}
 ${buildBeyondSection(d)}
 ${buildUnlimitedSection(d)}
 ${buildSelector(baseSlug)}
+<script>
+(function(){
+  var el = document.querySelector('.hero-section');
+  if (!el) return;
+  var parent = el.parentElement;
+  var limit = 8;
+  while (parent && limit-- > 0) {
+    var tag = parent.tagName.toLowerCase();
+    if (tag === 'body' || tag === 'main') break;
+    parent.style.setProperty('max-width', '100%', 'important');
+    parent.style.setProperty('padding-left', '0', 'important');
+    parent.style.setProperty('padding-right', '0', 'important');
+    parent.style.setProperty('margin-left', '0', 'important');
+    parent.style.setProperty('margin-right', '0', 'important');
+    parent.style.setProperty('width', '100%', 'important');
+    parent = parent.parentElement;
+  }
+})();
+<\/script>
 </body>
 </html>`;
 }
