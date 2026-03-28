@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Field from '../components/Field';
 import ProgressBar from '../components/ProgressBar';
 import { getGlossary } from '../lib/glossary';
@@ -8,7 +9,7 @@ import {
   translateTexts, translateAboutHtml, applyGlossaryPostProcessing,
 } from '../lib/api';
 import { buildPage, buildAboutHtmlStr } from '../lib/generator';
-import { saveToHistory } from '../lib/storage';
+import { saveToHistory, getHistory } from '../lib/storage';
 import JSZip from 'jszip';
 
 const LANGS = [
@@ -378,6 +379,19 @@ export default function Builder() {
   const [enOnly, setEnOnly] = useState(false);
   const [activeTab, setActiveTab] = useState('en');
   const [toast, setToast] = useState('');
+  const [editingEntry, setEditingEntry] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (!editId) return;
+    const entry = getHistory().find(e => e.id === editId);
+    if (entry?.form) {
+      setForm(entry.form);
+      setEditingEntry(entry);
+    }
+    setSearchParams({}, { replace: true });
+  }, []);
 
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(''), 2500); return () => clearTimeout(t); } }, [toast]);
 
@@ -461,7 +475,7 @@ export default function Builder() {
       setPages(result);
       setEnOnly(false);
       setActiveTab('en');
-      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, pages: result, enOnly: false });
+      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: result, enOnly: false });
       setStep(4);
     } catch (err) {
       setError(err.message || String(err));
@@ -492,7 +506,7 @@ export default function Builder() {
     setPages(enPages);
     setEnOnly(true);
     setActiveTab('en');
-    saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, pages: enPages, enOnly: true });
+    saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: enPages, enOnly: true });
     setStep(4);
   }
 
@@ -525,10 +539,19 @@ export default function Builder() {
     saveToHistory({
       artistName: form.artistName,
       pageSlug: form.pageSlug,
+      form,
       pages,
       enOnly,
     });
     setToast('Saved to history ✓');
+  }
+
+  function cancelEdit() {
+    setEditingEntry(null);
+    setForm(DEFAULT_FORM);
+    setStep(0);
+    setPages(null);
+    setError('');
   }
 
   const busy = step > 0 && step < 4;
@@ -539,6 +562,24 @@ export default function Builder() {
       <p className="text-sm mb-8 text-gray-400">
         Generate landing pages in 5 languages with one click.
       </p>
+
+      {/* Edit-mode banner */}
+      {editingEntry && (
+        <div className="flex items-center justify-between gap-4 rounded-xl px-4 py-3 mb-6 text-sm font-bold"
+          style={{ background: 'rgba(255,200,0,0.1)', border: '1px solid rgba(255,200,0,0.35)', color: '#ffd000' }}>
+          <span>
+            ✏️ Editing: <span style={{ opacity: 0.8 }}>{editingEntry.artistName} · {editingEntry.pageSlug}</span>
+            <span className="ml-2 font-normal" style={{ opacity: 0.6 }}>— Changes will save as a new version</span>
+          </span>
+          <button
+            onClick={cancelEdit}
+            className="shrink-0 h-7 px-3 rounded-lg text-xs font-black"
+            style={{ background: 'rgba(255,200,0,0.15)', border: '1px solid rgba(255,200,0,0.3)', color: '#ffd000' }}
+          >
+            ✕ Cancel
+          </button>
+        </div>
+      )}
 
       {/* API Key Selector */}
       <ApiKeySection provider={provider} onProviderChange={setProvider_local} />
@@ -657,7 +698,7 @@ export default function Builder() {
               onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
               onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
             >
-              ⚡ Generate in 5 languages
+              {editingEntry ? '⚡ Regenerate in 5 languages' : '⚡ Generate in 5 languages'}
             </button>
           </div>
           <button

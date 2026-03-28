@@ -14,7 +14,11 @@ export function saveToHistory(entry) {
   const newEntry = {
     id: Date.now().toString(),
     createdAt: new Date().toISOString(),
-    ...entry,
+    artistName: entry.artistName,
+    pageSlug: entry.pageSlug,
+    form: entry.form || null,
+    pages: entry.pages,
+    enOnly: entry.enOnly || false,
   };
   history.unshift(newEntry);
   localStorage.setItem(KEY, JSON.stringify(history.slice(0, 20)));

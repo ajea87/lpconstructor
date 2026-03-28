@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getHistory, deleteFromHistory } from '../lib/storage';
 import JSZip from 'jszip';
 
@@ -18,6 +18,7 @@ function formatDate(iso) {
 
 export default function History() {
   const [items, setItems] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => { setItems(getHistory()); }, []);
 
@@ -119,6 +120,15 @@ export default function History() {
                   style={{ background: '#fff', color: '#000' }}
                 >
                   ⬇ ZIP
+                </button>
+              )}
+              {entry.form && (
+                <button
+                  onClick={() => navigate(`/?edit=${entry.id}`)}
+                  className="h-8 px-3 rounded-lg text-xs font-bold"
+                  style={{ background: 'rgba(255,200,0,0.08)', color: 'rgba(255,200,0,0.8)', border: '1px solid rgba(255,200,0,0.2)' }}
+                >
+                  ✏️ Edit
                 </button>
               )}
               <button
