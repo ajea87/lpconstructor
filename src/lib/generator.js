@@ -490,10 +490,9 @@ export function buildPage(form, lang, strings, translatedAboutHtml) {
 </head>
 <body>
 <style>
-  .eda-header{background:#000000;padding:16px 0;text-align:center;
-  border-bottom:1px solid rgba(255,255,255,0.07);width:100%;}
+  .eda-header{background:#000000;padding:5px 0;text-align:center;border-bottom:1px solid rgba(255,255,255,0.07);width:100%;}
   .eda-header a{display:inline-block;line-height:0;}
-  .eda-header img{height:38px;width:auto;display:block;}
+  .eda-header img{height:auto;width:150px;display:block;}
 </style>
 <header class="eda-header">
   <a href="https://academy.ermesdance.com" target="_blank" rel="noopener">
