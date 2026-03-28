@@ -257,7 +257,7 @@ function buildSelector(slug) {
     <a href="https://academy.ermesdance.com/${slug}-es" class="lang-link" data-lang="es">\ud83c\uddea\ud83c\uddf8 Espa\xf1ol</a>
     <a href="https://academy.ermesdance.com/${slug}-it" class="lang-link" data-lang="it">\ud83c\uddee\ud83c\uddf9 Italiano</a>
     <a href="https://academy.ermesdance.com/${slug}-fr" class="lang-link" data-lang="fr">\ud83c\uddeb\ud83c\uddf7 Fran\xe7ais</a>
-    <a href="https://academy.ermesdance.com/${slug}-de" class="lang-link" data-lang="de">\ud83c\�\ud83c\udde9\ud83c\uddea Deutsch</a>
+    <a href="https://academy.ermesdance.com/${slug}-de" class="lang-link" data-lang="de">\ud83c\udde9\ud83c\uddea Deutsch</a>
   </div>
 </div>
 <style>
