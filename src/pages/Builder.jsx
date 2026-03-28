@@ -461,6 +461,7 @@ export default function Builder() {
       setPages(result);
       setEnOnly(false);
       setActiveTab('en');
+      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, pages: result, enOnly: false });
       setStep(4);
     } catch (err) {
       setError(err.message || String(err));
@@ -487,9 +488,11 @@ export default function Builder() {
       allRightsReserved:'All rights reserved.',
     };
     const html = buildPage(form, 'en', enStrings, enAboutHtml);
-    setPages({ en: html });
+    const enPages = { en: html };
+    setPages(enPages);
     setEnOnly(true);
     setActiveTab('en');
+    saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, pages: enPages, enOnly: true });
     setStep(4);
   }
 

@@ -17,7 +17,7 @@ export function saveToHistory(entry) {
     ...entry,
   };
   history.unshift(newEntry);
-  localStorage.setItem(KEY, JSON.stringify(history.slice(0, 50)));
+  localStorage.setItem(KEY, JSON.stringify(history.slice(0, 20)));
   return newEntry;
 }
 
