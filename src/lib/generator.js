@@ -475,7 +475,7 @@ export function buildPage(form, lang, strings, translatedAboutHtml) {
     ...strings,
     artistName: form.artistName || '',
     artistRole: form.artistRole || '',
-    ctaUrl: form.ctaUrl || '#',
+    ctaUrl: (form.ctaUrls ? (form.ctaUrls[lang] || form.ctaUrls.en || '#') : (form.ctaUrl || '#')),
     heroVideoId,
     freeLessonVideoId,
     activateSound: strings.activateSound || 'Activate Sound',

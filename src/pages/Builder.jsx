@@ -34,7 +34,13 @@ const DEFAULT_FORM = {
   freeLessonVideoIds: { en: '', es: '', it: '', fr: '', de: '' },
   freeLessonVideoPerLang: false,
   ctaText: 'Get Started for 8€/month',
-  ctaUrl: 'https://academy.ermesdance.com/pricing',
+  ctaUrls: {
+    en: 'https://academy.ermesdance.com/pricing',
+    es: 'https://academy.ermesdance.com/pricing-es',
+    it: 'https://academy.ermesdance.com/pricing-it',
+    fr: 'https://academy.ermesdance.com/pricing-fr',
+    de: 'https://academy.ermesdance.com/pricing-de',
+  },
   freeLessonTitle: '',
   aboutData: {
     introText: '',
@@ -708,9 +714,26 @@ export default function Builder() {
       {/* CTA */}
       <div className="rounded-xl p-5 mb-4" style={{ background: '#111', border: '1px solid #222' }}>
         <SectionLabel>Call to Action</SectionLabel>
-        <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="mb-3">
           <Field label="CTA Text" value={form.ctaText} onChange={v => setField('ctaText', v)} placeholder="Get Started for 8€/month" />
-          <Field label="CTA URL" value={form.ctaUrl} onChange={v => setField('ctaUrl', v)} placeholder="https://academy.ermesdance.com/pricing" />
+        </div>
+        <div className="mb-3">
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">CTA URL — per language</label>
+          <div className="space-y-2">
+            {LANGS.map(({ key, flag }) => (
+              <div key={key} className="flex items-center gap-2">
+                <span className="text-sm w-6 shrink-0">{flag}</span>
+                <input
+                  className="flex-1 rounded px-2 py-1.5 text-xs text-white outline-none"
+                  style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', fontFamily: 'inherit' }}
+                  value={(form.ctaUrls || {})[key] || ''}
+                  onChange={e => setForm(f => ({ ...f, ctaUrls: { ...f.ctaUrls, [key]: e.target.value } }))}
+                  placeholder={`https://academy.ermesdance.com/pricing${key === 'en' ? '' : '-' + key}`}
+                  spellCheck="false"
+                />
+              </div>
+            ))}
+          </div>
         </div>
         <Field label="Free Lesson Title (shown in modal)" value={form.freeLessonTitle} onChange={v => setField('freeLessonTitle', v)} placeholder="Lesson 2 - Hip Motion (FREE LESSON)" />
       </div>
