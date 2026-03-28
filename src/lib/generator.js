@@ -68,7 +68,7 @@ function buildHeroSection(d) {
   .hero-btn.outline:hover{border-color:rgba(255,255,255,1);}
   .hero-btn .play{width:0;height:0;border-left:10px solid #fff;border-top:6px solid transparent;border-bottom:6px solid transparent;transform:translateX(1px);}
   @media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:18px;}.hero-right{padding-top:6px;}}
-  @media(max-width:600px){.hero-inner{padding-top:0;padding-bottom:0;}.hero-title{font-size:30px!important;}.hero-subtitle{font-size:16px!important;}.hero-actions{margin-top:16px;}.hero-btn{height:46px;}.sound-btn{font-size:11px;padding:6px 11px 6px 8px;top:8px;right:8px;}}
+  @media(max-width:600px){.hero-inner{padding-top:0;padding-bottom:36px;}.hero-title{font-size:30px!important;}.hero-subtitle{font-size:16px!important;}.hero-actions{margin-top:16px;}.hero-btn{height:46px;}.sound-btn{font-size:11px;padding:6px 11px 6px 8px;top:8px;right:8px;}}
   .video-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:18px;z-index:999999;}
   .video-modal.is-open{display:flex;}
   .video-modal__panel{width:min(920px,100%);background:#0b0b0b;border:1px solid rgba(255,255,255,.14);border-radius:14px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.55);}
@@ -199,7 +199,7 @@ function buildUnlimitedSection(d) {
   .ed-uac__sidefade.right{right:0;background:linear-gradient(to left,rgba(0,0,0,.98),rgba(0,0,0,0));}
   .ed-uac__overlay{position:absolute;inset:0;pointer-events:none;z-index:7;opacity:.22;}
   .ed-uac__header{position:relative;z-index:9;text-align:center;max-width:1100px;margin:0 auto;padding:0 16px;transform:translateY(34px);}
-  .ed-uac__title{margin:0 0 16px;font-size:44px;font-weight:900;letter-spacing:-.03em;line-height:1.1;}
+  .ed-uac__title{margin:0 0 16px;font-size:44px;font-weight:900;letter-spacing:-.03em;line-height:1.1;color:#ffffff!important;}
   .ed-uac__btn{display:inline-flex;align-items:center;justify-content:center;height:46px;padding:0 26px;border-radius:12px;background:#fff;color:#111!important;text-decoration:none;font-weight:800;font-size:16px;border:2px solid #fff;box-shadow:0 14px 40px rgba(0,0,0,.55);}
   .ed-uac__btn:hover{opacity:.92;}
   .ed-uac__rows{position:relative;z-index:5;width:100%;margin-top:-18px;}
@@ -489,6 +489,18 @@ export function buildPage(form, lang, strings, translatedAboutHtml) {
 <style>*{box-sizing:border-box;}body{margin:0;padding:0;background:#000;}</style>
 </head>
 <body>
+<style>
+  .eda-header{background:#000000;padding:16px 0;text-align:center;
+  border-bottom:1px solid rgba(255,255,255,0.07);width:100%;}
+  .eda-header a{display:inline-block;line-height:0;}
+  .eda-header img{height:38px;width:auto;display:block;}
+</style>
+<header class="eda-header">
+  <a href="https://academy.ermesdance.com" target="_blank" rel="noopener">
+    <img src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2164751305/settings_images/a873d5-a7a4-e2ba-0222-2a6224428c21_2946885f-ffea-485a-9de3-55c9ebec76f1.png"
+    alt="Ermes Dance Academy" loading="eager">
+  </a>
+</header>
 ${buildHeroSection(d)}
 ${translatedAboutHtml}
 ${buildBeyondSection(d)}
