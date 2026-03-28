@@ -457,18 +457,27 @@ ${accordionItems}
 
 export function buildPage(form, lang, strings, translatedAboutHtml) {
   // strings = { courseLevel, courseTitle, courseSubtitle, ctaText, freeLessonTitle, beyondSuffix, unlimitedTitle, ... }
-  const videos = form.wistiaVideos || {};
-  const enVideos = videos.en || {};
-  const langVideos = videos[lang] || {};
+
+  // Resolve video IDs — new model (heroVideoIds/freeLessonVideoIds) with fallback to old (wistiaVideos)
+  let heroVideoId, freeLessonVideoId;
+  if (form.heroVideoIds) {
+    heroVideoId      = form.heroVideoIds[lang]      || form.heroVideoIds.en      || '';
+    freeLessonVideoId = form.freeLessonVideoIds?.[lang] || form.freeLessonVideoIds?.en || '';
+  } else {
+    const videos = form.wistiaVideos || {};
+    const enV = videos.en || {};
+    const langV = videos[lang] || {};
+    heroVideoId      = langV.heroVideoId      || enV.heroVideoId      || '';
+    freeLessonVideoId = langV.freeLessonVideoId || enV.freeLessonVideoId || '';
+  }
 
   const d = {
     ...strings,
     artistName: form.artistName || '',
     artistRole: form.artistRole || '',
     ctaUrl: form.ctaUrl || '#',
-    // Use lang-specific video IDs, fallback to EN
-    heroVideoId:      langVideos.heroVideoId      || enVideos.heroVideoId      || '',
-    freeLessonVideoId: langVideos.freeLessonVideoId || enVideos.freeLessonVideoId || '',
+    heroVideoId,
+    freeLessonVideoId,
     activateSound: strings.activateSound || 'Activate Sound',
     freeLessonBtn: strings.freeLessonBtn || 'Free Lesson',
     coursesLabel: strings.coursesLabel || 'Courses',

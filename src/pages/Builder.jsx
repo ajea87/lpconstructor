@@ -29,13 +29,10 @@ const DEFAULT_FORM = {
   courseLevel: '',
   courseTitle: '',
   courseSubtitle: '',
-  wistiaVideos: {
-    en: { heroVideoId: '', freeLessonVideoId: '' },
-    es: { heroVideoId: '', freeLessonVideoId: '' },
-    it: { heroVideoId: '', freeLessonVideoId: '' },
-    fr: { heroVideoId: '', freeLessonVideoId: '' },
-    de: { heroVideoId: '', freeLessonVideoId: '' },
-  },
+  heroVideoIds: { en: '', es: '', it: '', fr: '', de: '' },
+  heroVideoPerLang: false,
+  freeLessonVideoIds: { en: '', es: '', it: '', fr: '', de: '' },
+  freeLessonVideoPerLang: false,
   ctaText: 'Get Started for 8€/month',
   ctaUrl: 'https://academy.ermesdance.com/pricing',
   freeLessonTitle: '',
@@ -318,10 +315,9 @@ function AboutFormBuilder({ aboutData, onChange, artistName, artistRole }) {
         </div>
         <button
           onClick={addCourse}
-          className="mt-3 text-sm font-bold px-4 py-2 rounded-lg w-full"
-          style={{ border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', background: 'transparent' }}
+          className="w-full h-12 bg-white text-black font-black text-sm rounded-xl flex items-center justify-center gap-2 mt-4 transition-colors hover:bg-gray-100"
         >
-          + Add Course
+          <span className="text-lg font-black">+</span> Add Course
         </button>
       </div>
 
@@ -451,14 +447,8 @@ export default function Builder() {
 
   function setField(key, val) { setForm(f => ({ ...f, [key]: val })); }
 
-  function setVideoField(lang, field, val) {
-    setForm(f => ({
-      ...f,
-      wistiaVideos: {
-        ...f.wistiaVideos,
-        [lang]: { ...f.wistiaVideos[lang], [field]: val },
-      },
-    }));
+  function setVideoId(field, lang, val) {
+    setForm(f => ({ ...f, [field]: { ...f[field], [lang]: val } }));
   }
 
   async function generate() {
@@ -657,53 +647,62 @@ export default function Builder() {
       {/* Wistia Videos */}
       <div className="rounded-xl p-5 mb-4" style={{ background: '#111', border: '1px solid #222' }}>
         <SectionLabel>Wistia Videos</SectionLabel>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ borderBottom: '1px solid #222' }}>
-                <th className="text-left pb-3 pr-4 font-bold text-xs uppercase tracking-wider text-gray-400" style={{ width: 80 }}>Language</th>
-                <th className="text-left pb-3 pr-4 font-bold text-xs uppercase tracking-wider text-gray-400">Hero Video ID</th>
-                <th className="text-left pb-3 font-bold text-xs uppercase tracking-wider text-gray-400">Free Lesson Video ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {LANGS.map(({ key, flag, label }) => (
-                <tr key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  <td className="py-2 pr-4">
-                    <span className="text-base mr-1">{flag}</span>
-                    <span className="text-xs font-bold text-gray-400">{label}</span>
-                    {key !== 'en' && (
-                      <span className="ml-1 text-xs text-gray-600">↳</span>
-                    )}
-                  </td>
-                  <td className="py-2 pr-4">
-                    <input
-                      className="w-full rounded px-2 py-1.5 text-xs font-mono text-white outline-none"
-                      style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
-                      value={form.wistiaVideos[key].heroVideoId}
-                      onChange={e => setVideoField(key, 'heroVideoId', e.target.value)}
-                      placeholder={key === 'en' ? 'j1mton7xgc' : `fallback: ${form.wistiaVideos.en.heroVideoId || 'EN value'}`}
-                      spellCheck="false"
-                    />
-                  </td>
-                  <td className="py-2">
-                    <input
-                      className="w-full rounded px-2 py-1.5 text-xs font-mono text-white outline-none"
-                      style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
-                      value={form.wistiaVideos[key].freeLessonVideoId}
-                      onChange={e => setVideoField(key, 'freeLessonVideoId', e.target.value)}
-                      placeholder={key === 'en' ? 'bsqtbsbig6' : `fallback: ${form.wistiaVideos.en.freeLessonVideoId || 'EN value'}`}
-                      spellCheck="false"
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          {[
+            { label: 'Hero Video ID', idsField: 'heroVideoIds', perLangField: 'heroVideoPerLang', placeholder: 'j1mton7xgc' },
+            { label: 'Free Lesson Video ID', idsField: 'freeLessonVideoIds', perLangField: 'freeLessonVideoPerLang', placeholder: 'bsqtbsbig6' },
+          ].map(({ label, idsField, perLangField, placeholder }) => {
+            const perLang = form[perLangField];
+            const ids = form[idsField] || {};
+            const monoInput = { background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 6, color: '#fff', fontSize: 12, padding: '6px 10px', outline: 'none', fontFamily: 'monospace', width: '100%' };
+            return (
+              <div key={idsField}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <label className="text-xs font-bold text-gray-400 flex-1">{label}</label>
+                  <button
+                    onClick={() => setForm(f => ({
+                      ...f,
+                      [perLangField]: !perLang,
+                      [idsField]: perLang
+                        ? { ...ids, en: ids.en || '' }
+                        : { en: ids.en || '', es: '', it: '', fr: '', de: '' },
+                    }))}
+                    className="h-6 px-2 rounded text-xs font-bold"
+                    style={{
+                      background: perLang ? 'rgba(255,200,0,0.15)' : 'rgba(255,255,255,0.06)',
+                      color: perLang ? '#ffd000' : 'rgba(255,255,255,0.4)',
+                      border: perLang ? '1px solid rgba(255,200,0,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                    }}
+                  >🌐 Per language</button>
+                </div>
+                {!perLang ? (
+                  <input
+                    style={monoInput}
+                    value={ids.en || ''}
+                    onChange={e => setVideoId(idsField, 'en', e.target.value)}
+                    placeholder={placeholder}
+                    spellCheck="false"
+                  />
+                ) : (
+                  <div className="grid grid-cols-5 gap-2">
+                    {LANGS.map(({ key, flag }) => (
+                      <div key={key}>
+                        <label className="text-xs text-gray-500 mb-1 block">{flag} {key.toUpperCase()}</label>
+                        <input
+                          style={monoInput}
+                          value={ids[key] || ''}
+                          onChange={e => setVideoId(idsField, key, e.target.value)}
+                          placeholder={key === 'en' ? placeholder : ids.en || '↳ EN'}
+                          spellCheck="false"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-        <p className="text-xs mt-2 text-gray-500">
-          Leave blank to use EN values as fallback.
-        </p>
       </div>
 
       {/* CTA */}
