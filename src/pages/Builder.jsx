@@ -225,28 +225,82 @@ function AboutFormBuilder({ aboutData, onChange, artistName, artistRole }) {
                   {/* Lessons */}
                   <div className="space-y-2">
                     {(course.lessons || []).map((lesson, li) => (
-                      <div key={li} className="flex gap-2 items-center">
-                        <div className="flex-1 min-w-0">
-                          <input
-                            style={smallInputStyle}
-                            value={lesson.title}
-                            onChange={e => updateLesson(ci, li, { title: e.target.value })}
-                            placeholder={`Lesson ${li + 1} title`}
-                          />
+                      <div key={li}>
+                        {/* Row 1: title + wistia single + toggle + delete */}
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1 min-w-0">
+                            <input
+                              style={smallInputStyle}
+                              value={lesson.title}
+                              onChange={e => updateLesson(ci, li, { title: e.target.value })}
+                              placeholder={`Lesson ${li + 1} title`}
+                            />
+                          </div>
+                          {!lesson.wistiaPerLang && (
+                            <div style={{ width: 120, flexShrink: 0 }}>
+                              <input
+                                style={{ ...smallInputStyle, fontFamily: 'monospace' }}
+                                value={lesson.wistiaId || ''}
+                                onChange={e => updateLesson(ci, li, { wistiaId: e.target.value })}
+                                placeholder="Wistia ID (free)"
+                              />
+                            </div>
+                          )}
+                          <button
+                            title={lesson.wistiaPerLang ? 'Collapse per-language' : 'Per language'}
+                            onClick={() => {
+                              if (lesson.wistiaPerLang) {
+                                updateLesson(ci, li, {
+                                  wistiaId: lesson.wistiaIds?.en || '',
+                                  wistiaIds: undefined,
+                                  wistiaPerLang: false,
+                                });
+                              } else {
+                                updateLesson(ci, li, {
+                                  wistiaIds: { en: lesson.wistiaId || '', es: '', it: '', fr: '', de: '' },
+                                  wistiaId: undefined,
+                                  wistiaPerLang: true,
+                                });
+                              }
+                            }}
+                            className="flex-none h-7 px-2 rounded text-xs font-bold"
+                            style={{
+                              background: lesson.wistiaPerLang ? 'rgba(255,200,0,0.15)' : 'rgba(255,255,255,0.06)',
+                              color: lesson.wistiaPerLang ? '#ffd000' : 'rgba(255,255,255,0.4)',
+                              border: lesson.wistiaPerLang ? '1px solid rgba(255,200,0,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >🌐</button>
+                          <button
+                            onClick={() => removeLesson(ci, li)}
+                            className="w-7 h-7 flex-none rounded flex items-center justify-center text-xs"
+                            style={{ background: 'rgba(255,50,50,0.1)', color: 'rgba(255,80,80,0.7)' }}
+                          >✕</button>
                         </div>
-                        <div style={{ width: 130, flexShrink: 0 }}>
-                          <input
-                            style={{ ...smallInputStyle, fontFamily: 'monospace' }}
-                            value={lesson.wistiaId || ''}
-                            onChange={e => updateLesson(ci, li, { wistiaId: e.target.value })}
-                            placeholder="Wistia ID (free)"
-                          />
-                        </div>
-                        <button
-                          onClick={() => removeLesson(ci, li)}
-                          className="w-7 h-7 flex-none rounded flex items-center justify-center text-xs"
-                          style={{ background: 'rgba(255,50,50,0.1)', color: 'rgba(255,80,80,0.7)' }}
-                        >✕</button>
+                        {/* Row 2: per-language wistia inputs */}
+                        {lesson.wistiaPerLang && (
+                          <div className="mt-1.5 ml-0 grid grid-cols-5 gap-1.5">
+                            {[
+                              { key: 'en', flag: '🇬🇧' },
+                              { key: 'es', flag: '🇪🇸' },
+                              { key: 'it', flag: '🇮🇹' },
+                              { key: 'fr', flag: '🇫🇷' },
+                              { key: 'de', flag: '🇩🇪' },
+                            ].map(({ key, flag }) => (
+                              <div key={key}>
+                                <label className="text-xs text-gray-500 mb-0.5 block">{flag} {key.toUpperCase()}</label>
+                                <input
+                                  style={{ ...smallInputStyle, fontFamily: 'monospace', fontSize: 11 }}
+                                  value={lesson.wistiaIds?.[key] || ''}
+                                  onChange={e => updateLesson(ci, li, {
+                                    wistiaIds: { ...lesson.wistiaIds, [key]: e.target.value },
+                                  })}
+                                  placeholder="ID"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -432,12 +486,13 @@ export default function Builder() {
 
       // Step 2: Translate About x 4 in parallel
       setStep(2);
-      const enAboutHtml = buildAboutHtmlStr({ ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole });
+      const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
+      const enAboutHtml = buildAboutHtmlStr(aboutBase, 'en');
       const [aboutEs, aboutIt, aboutFr, aboutDe] = await Promise.all([
-        translateAboutHtml(enAboutHtml, 'es', glossary),
-        translateAboutHtml(enAboutHtml, 'it', glossary),
-        translateAboutHtml(enAboutHtml, 'fr', glossary),
-        translateAboutHtml(enAboutHtml, 'de', glossary),
+        translateAboutHtml(buildAboutHtmlStr(aboutBase, 'es'), 'es', glossary),
+        translateAboutHtml(buildAboutHtmlStr(aboutBase, 'it'), 'it', glossary),
+        translateAboutHtml(buildAboutHtmlStr(aboutBase, 'fr'), 'fr', glossary),
+        translateAboutHtml(buildAboutHtmlStr(aboutBase, 'de'), 'de', glossary),
       ]);
 
       const aboutByLang = {
@@ -485,7 +540,7 @@ export default function Builder() {
 
   function generateEnOnly() {
     setError('');
-    const enAboutHtml = buildAboutHtmlStr({ ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole });
+    const enAboutHtml = buildAboutHtmlStr({ ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole }, 'en');
     const enStrings = {
       courseLevel:      form.courseLevel,
       courseTitle:      form.courseTitle,

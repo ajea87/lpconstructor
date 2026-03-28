@@ -282,7 +282,7 @@ function buildSelector(slug) {
 <\/script>`;
 }
 
-export function buildAboutHtmlStr(aboutData) {
+export function buildAboutHtmlStr(aboutData, lang = 'en') {
   const {
     introText = '',
     totalLessons = '',
@@ -305,8 +305,11 @@ export function buildAboutHtmlStr(aboutData) {
   const accordionItems = courses.map((course) => {
     const lessonCount = (course.lessons || []).length;
     const lessonsHtml = (course.lessons || []).map((lesson) => {
-      const freeBtn = lesson.wistiaId
-        ? `\n              <button class="ed4-free" type="button" data-wistia="${lesson.wistiaId}" data-title="${lesson.title} (FREE LESSON)">\n                <span class="ed4-play" aria-hidden="true">▶</span> Free lesson\n              </button>`
+      const resolvedWistiaId = lesson.wistiaIds
+        ? (lesson.wistiaIds[lang] || lesson.wistiaIds.en || '')
+        : (lesson.wistiaId || '');
+      const freeBtn = resolvedWistiaId
+        ? `\n              <button class="ed4-free" type="button" data-wistia="${resolvedWistiaId}" data-title="${lesson.title} (FREE LESSON)">\n                <span class="ed4-play" aria-hidden="true">▶</span> Free lesson\n              </button>`
         : '';
       return `
             <div class="ed4-lesson">
