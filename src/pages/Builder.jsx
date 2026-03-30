@@ -6,7 +6,10 @@ import { getGlossary } from '../lib/glossary';
 import {
   getAnthropicKey, getOpenAIKey, saveAnthropicKey, saveOpenAIKey,
   getProvider, setProvider,
-  translateTexts, translateAboutHtml, applyGlossaryPostProcessing,
+  getTranslationModel, setTranslationModel as persistTranslationModel,
+  HAIKU_MODEL, SONNET_MODEL,
+  translateTexts, translateAboutHtmlAllLangs, applyGlossaryPostProcessing,
+  getTranslationCache, clearTranslationCache,
 } from '../lib/api';
 import { buildPage, buildAboutHtmlStr, buildMultilingualPage } from '../lib/generator';
 import { saveToHistory, getHistory } from '../lib/storage';
@@ -351,7 +354,7 @@ function AboutFormBuilder({ aboutData, onChange, artistName, artistRole }) {
 
 // ── API Key Selector ────────────────────────────────────────
 
-function ApiKeySection({ provider, onProviderChange }) {
+function ApiKeySection({ provider, onProviderChange, translationModel, onTranslationModelChange }) {
   const [anthropicKey, setAnthropicKeyLocal] = useState(getAnthropicKey);
   const [openaiKey, setOpenAIKeyLocal] = useState(getOpenAIKey);
 
@@ -413,6 +416,31 @@ function ApiKeySection({ provider, onProviderChange }) {
           placeholder="sk-..."
         />
       )}
+      {provider === 'anthropic' && (
+        <div className="mt-3 pt-3" style={{ borderTop: '1px solid #222' }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2 text-gray-400">Translation Model</p>
+          <div className="flex gap-2">
+            {[
+              { id: HAIKU_MODEL,  label: '⚡ Haiku',  sub: 'fast & cheap' },
+              { id: SONNET_MODEL, label: '✦ Sonnet', sub: 'higher quality' },
+            ].map(({ id, label, sub }) => (
+              <button
+                key={id}
+                onClick={() => { persistTranslationModel(id); onTranslationModelChange(id); }}
+                className="flex-1 h-9 rounded-lg text-xs font-bold flex flex-col items-center justify-center leading-tight transition-colors"
+                style={{
+                  background: translationModel === id ? '#fff' : 'transparent',
+                  color: translationModel === id ? '#000' : 'rgba(255,255,255,0.5)',
+                  border: translationModel === id ? '1px solid #fff' : '1px solid rgba(255,255,255,0.15)',
+                }}
+              >
+                {label}
+                <span style={{ fontSize: 9, opacity: 0.6, fontWeight: 'normal' }}>{sub}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -436,6 +464,8 @@ export default function Builder() {
   const [isMono, setIsMono] = useState(false);
   const [monoPage, setMonoPage] = useState(null);
   const [cachedTranslations, setCachedTranslations] = useState(null);
+  const [translationModel, setTranslationModelLocal] = useState(getTranslationModel);
+  const [cacheInfo, setCacheInfo] = useState(null);
   const [activeTab, setActiveTab] = useState('en');
   const [toast, setToast] = useState('');
   const [editingEntry, setEditingEntry] = useState(null);
@@ -501,23 +531,25 @@ export default function Builder() {
       // Step 1: Translate UI texts
       const uiTrans = await translateTexts(form, glossary);
 
-      // Step 2: Translate About x 4 in parallel
+      // Step 2: Translate About — single call for all 4 langs (text extraction reduces tokens ~95%)
       setStep(2);
       const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
       const enAboutHtml = buildAboutHtmlStr(aboutBase, 'en');
-      const [aboutEs, aboutIt, aboutFr, aboutDe] = await Promise.all([
-        translateAboutHtml(buildAboutHtmlStr(aboutBase, 'es'), 'es', glossary),
-        translateAboutHtml(buildAboutHtmlStr(aboutBase, 'it'), 'it', glossary),
-        translateAboutHtml(buildAboutHtmlStr(aboutBase, 'fr'), 'fr', glossary),
-        translateAboutHtml(buildAboutHtmlStr(aboutBase, 'de'), 'de', glossary),
-      ]);
+      const aboutHtmlsByLang = {
+        es: buildAboutHtmlStr(aboutBase, 'es'),
+        it: buildAboutHtmlStr(aboutBase, 'it'),
+        fr: buildAboutHtmlStr(aboutBase, 'fr'),
+        de: buildAboutHtmlStr(aboutBase, 'de'),
+      };
+      const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(enAboutHtml, aboutHtmlsByLang, glossary);
+      setCacheInfo({ fromCache, textCount });
 
       const aboutByLang = {
         en: enAboutHtml,
-        es: applyGlossaryPostProcessing(aboutEs, 'es', glossary),
-        it: applyGlossaryPostProcessing(aboutIt, 'it', glossary),
-        fr: applyGlossaryPostProcessing(aboutFr, 'fr', glossary),
-        de: applyGlossaryPostProcessing(aboutDe, 'de', glossary),
+        es: applyGlossaryPostProcessing(aboutTranslated.es, 'es', glossary),
+        it: applyGlossaryPostProcessing(aboutTranslated.it, 'it', glossary),
+        fr: applyGlossaryPostProcessing(aboutTranslated.fr, 'fr', glossary),
+        de: applyGlossaryPostProcessing(aboutTranslated.de, 'de', glossary),
       };
 
       // Step 3: Build pages
@@ -596,18 +628,20 @@ export default function Builder() {
         setStep(2);
         const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
         const enAboutHtml = buildAboutHtmlStr(aboutBase, 'en');
-        const [aboutEs, aboutIt, aboutFr, aboutDe] = await Promise.all([
-          translateAboutHtml(buildAboutHtmlStr(aboutBase, 'es'), 'es', glossary),
-          translateAboutHtml(buildAboutHtmlStr(aboutBase, 'it'), 'it', glossary),
-          translateAboutHtml(buildAboutHtmlStr(aboutBase, 'fr'), 'fr', glossary),
-          translateAboutHtml(buildAboutHtmlStr(aboutBase, 'de'), 'de', glossary),
-        ]);
+        const aboutHtmlsByLang = {
+          es: buildAboutHtmlStr(aboutBase, 'es'),
+          it: buildAboutHtmlStr(aboutBase, 'it'),
+          fr: buildAboutHtmlStr(aboutBase, 'fr'),
+          de: buildAboutHtmlStr(aboutBase, 'de'),
+        };
+        const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(enAboutHtml, aboutHtmlsByLang, glossary);
+        setCacheInfo({ fromCache, textCount });
         aboutByLang = {
           en: enAboutHtml,
-          es: applyGlossaryPostProcessing(aboutEs, 'es', glossary),
-          it: applyGlossaryPostProcessing(aboutIt, 'it', glossary),
-          fr: applyGlossaryPostProcessing(aboutFr, 'fr', glossary),
-          de: applyGlossaryPostProcessing(aboutDe, 'de', glossary),
+          es: applyGlossaryPostProcessing(aboutTranslated.es, 'es', glossary),
+          it: applyGlossaryPostProcessing(aboutTranslated.it, 'it', glossary),
+          fr: applyGlossaryPostProcessing(aboutTranslated.fr, 'fr', glossary),
+          de: applyGlossaryPostProcessing(aboutTranslated.de, 'de', glossary),
         };
         enStrings = buildEnStrings(form);
         setCachedTranslations({ uiTrans, aboutByLang, enStrings });
@@ -715,7 +749,12 @@ export default function Builder() {
       )}
 
       {/* API Key Selector */}
-      <ApiKeySection provider={provider} onProviderChange={setProvider_local} />
+      <ApiKeySection
+        provider={provider}
+        onProviderChange={setProvider_local}
+        translationModel={translationModel}
+        onTranslationModelChange={setTranslationModelLocal}
+      />
 
       {/* Artist */}
       <div className="rounded-xl p-5 mb-4" style={{ background: '#111', border: '1px solid #222' }}>
@@ -878,6 +917,26 @@ export default function Builder() {
           >
             🌐 Single multilingual file
           </button>
+        </div>
+      )}
+
+      {/* Cache info */}
+      {cacheInfo && !busy && (
+        <div className="mt-2 flex items-center gap-3 flex-wrap">
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            {cacheInfo.fromCache
+              ? `⚡ About section from cache — ~${cacheInfo.textCount * 30} tokens saved`
+              : `${cacheInfo.textCount} text strings translated · saved to cache`}
+          </p>
+          {cacheInfo.fromCache && (
+            <button
+              onClick={() => { clearTranslationCache(); setCacheInfo(null); }}
+              className="text-xs"
+              style={{ color: 'rgba(255,100,100,0.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              Clear cache
+            </button>
+          )}
         </div>
       )}
 
