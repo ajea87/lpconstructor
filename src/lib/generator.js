@@ -489,7 +489,7 @@ export function buildPage(form, lang, strings, translatedAboutHtml) {
   const slug = (form.pageSlug || 'lp-artista') + (lang === 'en' ? '' : '-' + lang);
   const baseSlug = form.pageSlug || 'lp-artista';
 
-  return `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
 <meta charset="UTF-8">
@@ -538,6 +538,11 @@ ${buildSelector(baseSlug)}
 <\/script>
 </body>
 </html>`;
+  if (!html.includes('</html>')) {
+    throw new Error('[buildPage] Generated HTML for lang=' + lang + ' is incomplete — missing </html>');
+  }
+  console.log('[buildPage] lang=' + lang + ', length=' + html.length + ' chars');
+  return html;
 }
 
 // ── Multilingual single-file builder ─────────────────────────────────────────
@@ -751,6 +756,15 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls) {
     dByLang[lang] = buildD_ml(form, lang, allStrings[lang]);
   }
 
+  const courseTitle = (allStrings.en && allStrings.en.courseTitle) || form.courseTitle || 'Course';
+
+  // ── Build each piece separately (string concat, no giant template literal) ──
+
+  function lb(lang, content, first) {
+    return '<div data-lang="' + lang + '" class="lang-block"' + (first ? '' : ' hidden') + '>' + content + '</div>';
+  }
+
+  // Shared CSS from EN sections (goes once in <head>)
   const allCss = [
     extractStyleBlocks(buildHeroSection(dByLang.en)),
     extractStyleBlocks(allAboutHtmls.en),
@@ -758,107 +772,122 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls) {
     extractStyleBlocks(buildUnlimitedSection(dByLang.en)),
   ].join('\n');
 
-  function langBlock(lang, content, first) {
-    return `<div data-lang="${lang}" class="lang-block"${first ? '' : ' hidden'}>${content}</div>`;
-  }
+  // <head>
+  const head = '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
+    '<meta charset="UTF-8">\n' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+    '<title>' + courseTitle + ' | Ermes Dance Academy</title>\n' +
+    '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+    '<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">\n' +
+    '<script src="https://fast.wistia.com/assets/external/E-v1.js" async><\/script>\n' +
+    '<style>*{box-sizing:border-box;}body{margin:0;padding:0;background:#000;}</style>\n' +
+    allCss + '\n' +
+    '</head>\n';
 
-  const heroBlocks = ML_LANGS.map((lang, i) =>
-    langBlock(lang, buildHeroBlock(dByLang[lang], lang), i === 0)
-  ).join('\n');
+  // Header (once)
+  const header =
+    '<body>\n' +
+    '<style>\n' +
+    '  .eda-header{background:#000000;padding:5px 0;text-align:center;border-bottom:1px solid rgba(255,255,255,0.07);width:100%;}\n' +
+    '  .eda-header a{display:inline-block;line-height:0;}\n' +
+    '  .eda-header img{height:auto;width:150px;display:block;}\n' +
+    '</style>\n' +
+    '<header class="eda-header">\n' +
+    '  <a href="https://academy.ermesdance.com" target="_blank" rel="noopener">\n' +
+    '    <img src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2164751305/settings_images/a873d5-a7a4-e2ba-0222-2a6224428c21_2946885f-ffea-485a-9de3-55c9ebec76f1.png" alt="Ermes Dance Academy" loading="eager">\n' +
+    '  </a>\n' +
+    '</header>\n';
 
-  const aboutBlocks = ML_LANGS.map((lang, i) =>
-    langBlock(lang, buildAboutBlock(allAboutHtmls[lang]), i === 0)
-  ).join('\n');
+  // Hero lang-blocks
+  const heroBlocks = ML_LANGS.map((lang, i) => lb(lang, buildHeroBlock(dByLang[lang], lang), i === 0)).join('\n');
 
-  const beyondBlocks = ML_LANGS.map((lang, i) =>
-    langBlock(lang, buildBeyondBlock(dByLang[lang]), i === 0)
-  ).join('\n');
+  // About lang-blocks
+  const aboutBlocks = ML_LANGS.map((lang, i) => lb(lang, buildAboutBlock(allAboutHtmls[lang]), i === 0)).join('\n');
 
+  // Beyond lang-blocks
+  const beyondBlocks = ML_LANGS.map((lang, i) => lb(lang, buildBeyondBlock(dByLang[lang]), i === 0)).join('\n');
+
+  // Unlimited: header in lang-blocks, marquee images once
   const unlimitedHeaders = ML_LANGS.map((lang, i) => {
     const d = dByLang[lang];
-    return langBlock(lang,
-      `<div class="ed-uac__header"><h2 class="ed-uac__title">${d.unlimitedTitle || 'Unlimited Access to all Courses'}</h2><a class="ed-uac__btn" href="${d.ctaUrl}" target="_blank" rel="noopener">${d.ctaText}</a></div>`,
-      i === 0);
+    const hdr = '<div class="ed-uac__header">' +
+      '<h2 class="ed-uac__title">' + (d.unlimitedTitle || 'Unlimited Access to all Courses') + '</h2>' +
+      '<a class="ed-uac__btn" href="' + d.ctaUrl + '" target="_blank" rel="noopener">' + d.ctaText + '</a>' +
+      '</div>';
+    return lb(lang, hdr, i === 0);
   }).join('\n  ');
 
   const row1 = tiles(ROW1_IMGS);
   const row2 = tiles(ROW2_IMGS);
   const row3 = tiles(ROW3_IMGS);
 
+  const unlimited =
+    '<section class="ed-uac">\n' +
+    '  <div class="ed-uac__sidefade left" aria-hidden="true"></div>\n' +
+    '  <div class="ed-uac__sidefade right" aria-hidden="true"></div>\n' +
+    '  <div class="ed-uac__overlay" aria-hidden="true"></div>\n' +
+    '  ' + unlimitedHeaders + '\n' +
+    '  <div class="ed-uac__rows" aria-label="Course covers marquee">\n' +
+    '    <div class="ed-row ed-row--ltr ed-row--topfade"><div class="ed-track">' + row1 + '</div></div>\n' +
+    '    <div class="ed-row ed-row--rtl ed-row--offset"><div class="ed-track">' + row2 + '</div></div>\n' +
+    '    <div class="ed-row ed-row--ltr"><div class="ed-track">' + row3 + '</div></div>\n' +
+    '  </div>\n' +
+    '</section>\n';
+
+  // Footer lang-blocks
   const footerBlocks = ML_LANGS.map((lang, i) => {
     const d = dByLang[lang];
-    return langBlock(lang, `<footer class="ed-footer" role="contentinfo">
-  <div class="ed-footer__wrap">
-    <div class="ed-footer__divider" aria-hidden="true"></div>
-    <div class="ed-footer__logo" aria-hidden="true"><img src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2164751305/settings_images/a873d5-a7a4-e2ba-0222-2a6224428c21_2946885f-ffea-485a-9de3-55c9ebec76f1.png" alt="" loading="lazy"/></div>
-    <div class="ed-footer__text">\xa9 2026 Ermes Dance Academy. ${d.allRightsReserved || 'All rights reserved.'}</div>
-  </div>
-</footer>`, i === 0);
+    const foot =
+      '<footer class="ed-footer" role="contentinfo">\n' +
+      '  <div class="ed-footer__wrap">\n' +
+      '    <div class="ed-footer__divider" aria-hidden="true"></div>\n' +
+      '    <div class="ed-footer__logo" aria-hidden="true"><img src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2164751305/settings_images/a873d5-a7a4-e2ba-0222-2a6224428c21_2946885f-ffea-485a-9de3-55c9ebec76f1.png" alt="" loading="lazy"/></div>\n' +
+      '    <div class="ed-footer__text">\xa9 2026 Ermes Dance Academy. ' + (d.allRightsReserved || 'All rights reserved.') + '</div>\n' +
+      '  </div>\n' +
+      '</footer>';
+    return lb(lang, foot, i === 0);
   }).join('\n');
 
-  const courseTitle = (allStrings.en && allStrings.en.courseTitle) || form.courseTitle || 'Course';
+  // Parent-override script (once)
+  const parentOverride =
+    '<script>\n' +
+    '(function(){\n' +
+    '  var el=document.querySelector(\'.hero-section\');\n' +
+    '  if(!el)return;\n' +
+    '  var parent=el.parentElement,limit=8;\n' +
+    '  while(parent&&limit-->0){\n' +
+    '    var tag=parent.tagName.toLowerCase();\n' +
+    '    if(tag===\'body\'||tag===\'main\')break;\n' +
+    '    parent.style.setProperty(\'max-width\',\'100%\',\'important\');\n' +
+    '    parent.style.setProperty(\'padding-left\',\'0\',\'important\');\n' +
+    '    parent.style.setProperty(\'padding-right\',\'0\',\'important\');\n' +
+    '    parent.style.setProperty(\'margin-left\',\'0\',\'important\');\n' +
+    '    parent.style.setProperty(\'margin-right\',\'0\',\'important\');\n' +
+    '    parent.style.setProperty(\'width\',\'100%\',\'important\');\n' +
+    '    parent=parent.parentElement;\n' +
+    '  }\n' +
+    '})();\n' +
+    '<\/script>\n';
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${courseTitle} | Ermes Dance Academy</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://fast.wistia.com/assets/external/E-v1.js" async><\/script>
-<style>*{box-sizing:border-box;}body{margin:0;padding:0;background:#000;}</style>
-${allCss}
-</head>
-<body>
-<style>
-  .eda-header{background:#000000;padding:5px 0;text-align:center;border-bottom:1px solid rgba(255,255,255,0.07);width:100%;}
-  .eda-header a{display:inline-block;line-height:0;}
-  .eda-header img{height:auto;width:150px;display:block;}
-</style>
-<header class="eda-header">
-  <a href="https://academy.ermesdance.com" target="_blank" rel="noopener">
-    <img src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2164751305/settings_images/a873d5-a7a4-e2ba-0222-2a6224428c21_2946885f-ffea-485a-9de3-55c9ebec76f1.png" alt="Ermes Dance Academy" loading="eager">
-  </a>
-</header>
-${heroBlocks}
-${buildSharedHeroModal()}
-${aboutBlocks}
-${buildSharedAboutModal()}
-${beyondBlocks}
-<section class="ed-uac">
-  <div class="ed-uac__sidefade left" aria-hidden="true"></div>
-  <div class="ed-uac__sidefade right" aria-hidden="true"></div>
-  <div class="ed-uac__overlay" aria-hidden="true"></div>
-  ${unlimitedHeaders}
-  <div class="ed-uac__rows" aria-label="Course covers marquee">
-    <div class="ed-row ed-row--ltr ed-row--topfade"><div class="ed-track">${row1}</div></div>
-    <div class="ed-row ed-row--rtl ed-row--offset"><div class="ed-track">${row2}</div></div>
-    <div class="ed-row ed-row--ltr"><div class="ed-track">${row3}</div></div>
-  </div>
-</section>
-${footerBlocks}
-${buildMLSelector()}
-${buildMLScript(dByLang)}
-<script>
-(function(){
-  var el=document.querySelector('.hero-section');
-  if(!el)return;
-  var parent=el.parentElement,limit=8;
-  while(parent&&limit-->0){
-    var tag=parent.tagName.toLowerCase();
-    if(tag==='body'||tag==='main')break;
-    parent.style.setProperty('max-width','100%','important');
-    parent.style.setProperty('padding-left','0','important');
-    parent.style.setProperty('padding-right','0','important');
-    parent.style.setProperty('margin-left','0','important');
-    parent.style.setProperty('margin-right','0','important');
-    parent.style.setProperty('width','100%','important');
-    parent=parent.parentElement;
+  // ── Assemble ──────────────────────────────────────────────────────────────
+  const html = head
+    + header
+    + heroBlocks + '\n'
+    + buildSharedHeroModal() + '\n'
+    + aboutBlocks + '\n'
+    + buildSharedAboutModal() + '\n'
+    + beyondBlocks + '\n'
+    + unlimited
+    + footerBlocks + '\n'
+    + buildMLSelector() + '\n'
+    + buildMLScript(dByLang) + '\n'
+    + parentOverride
+    + '</body>\n</html>';
+
+  if (!html.includes('</html>')) {
+    throw new Error('[buildMultilingualPage] Generated HTML is incomplete — missing </html>');
   }
-})();
-<\/script>
-</body>
-</html>`;
+  console.log('[buildMultilingualPage] OK, length:', html.length, 'chars');
+  return html;
 }

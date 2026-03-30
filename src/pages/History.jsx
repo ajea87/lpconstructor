@@ -29,24 +29,59 @@ export default function History() {
   }
 
   async function downloadZip(entry) {
-    const zip = new JSZip();
     const slug = entry.pageSlug || 'lp-artista';
-    for (const lang of LANGS) {
-      if (entry.pages?.[lang]) zip.file(`${slug}${FILE_SUFFIX[lang]}.html`, entry.pages[lang]);
+    const pages = entry.pages || {};
+
+    // Diagnostic
+    console.log('[History] downloadZip, slug:', slug, 'pages keys:', Object.keys(pages));
+    Object.entries(pages).forEach(([k, v]) => {
+      console.log('[History] pages.' + k + ':', v?.length ?? 0, 'chars');
+    });
+
+    const zip = new JSZip();
+
+    if (entry.isMono && pages.mono && pages.mono.length > 100) {
+      // Single multilingual file → zip it as one file
+      zip.file(slug + '.html', pages.mono);
+      console.log('[History] Adding mono file:', slug + '.html');
+    } else {
+      // 5-lang or en-only
+      LANGS.forEach(lang => {
+        const html = pages[lang];
+        if (html && html.length > 100) {
+          zip.file(slug + FILE_SUFFIX[lang] + '.html', html);
+          console.log('[History] Adding', lang + ':', html.length, 'chars');
+        } else {
+          console.warn('[History] Skipping lang=' + lang + ', html length:', html?.length ?? 0);
+        }
+      });
     }
+
     const blob = await zip.generateAsync({ type: 'blob' });
+    console.log('[History] ZIP blob size:', blob.size, 'bytes');
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `${slug}.zip`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = slug + '.zip'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadMono(entry) {
+    const slug = entry.pageSlug || 'lp-artista';
+    const html = entry.pages?.mono || '';
+    console.log('[History] downloadMono:', slug + '.html', html.length, 'chars');
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = slug + '.html'; a.click();
     URL.revokeObjectURL(url);
   }
 
   function downloadOne(entry, lang) {
     const slug = entry.pageSlug || 'lp-artista';
-    const fname = entry.enOnly && lang === 'en' ? `${slug}.html` : `${slug}${FILE_SUFFIX[lang]}.html`;
-    const blob = new Blob([entry.pages[lang]], { type: 'text/html;charset=utf-8' });
+    const html = entry.pages?.[lang] || '';
+    console.log('[History] downloadOne lang=' + lang + ':', html.length, 'chars');
+    const fname = entry.enOnly && lang === 'en' ? slug + '.html' : slug + FILE_SUFFIX[lang] + '.html';
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = fname; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = fname; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -96,6 +131,11 @@ export default function History() {
                     EN only
                   </span>
                 )}
+                {entry.isMono && (
+                  <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(100,200,255,0.08)', color: 'rgba(100,200,255,0.7)' }}>
+                    🌐 multilingual
+                  </span>
+                )}
                 <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
                   {formatDate(entry.createdAt)}
                 </p>
@@ -103,24 +143,45 @@ export default function History() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {LANGS.map(lang => entry.pages?.[lang] && (
-                <button
-                  key={lang}
-                  onClick={() => downloadOne(entry, lang)}
-                  className="h-8 px-3 rounded-lg text-xs font-bold"
-                  style={{ background: 'rgba(255,255,255,0.07)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
-                >
-                  {FLAG[lang]} {lang.toUpperCase()}
-                </button>
-              ))}
-              {!entry.enOnly && (
-                <button
-                  onClick={() => downloadZip(entry)}
-                  className="h-8 px-4 rounded-lg text-xs font-bold"
-                  style={{ background: '#fff', color: '#000' }}
-                >
-                  ⬇ ZIP
-                </button>
+              {entry.isMono && entry.pages?.mono ? (
+                <>
+                  <button
+                    onClick={() => downloadMono(entry)}
+                    className="h-8 px-3 rounded-lg text-xs font-bold"
+                    style={{ background: 'rgba(255,255,255,0.07)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                  >
+                    ⬇ {entry.pageSlug || 'lp-artista'}.html
+                  </button>
+                  <button
+                    onClick={() => downloadZip(entry)}
+                    className="h-8 px-4 rounded-lg text-xs font-bold"
+                    style={{ background: '#fff', color: '#000' }}
+                  >
+                    ⬇ ZIP
+                  </button>
+                </>
+              ) : (
+                <>
+                  {LANGS.map(lang => entry.pages?.[lang] && (
+                    <button
+                      key={lang}
+                      onClick={() => downloadOne(entry, lang)}
+                      className="h-8 px-3 rounded-lg text-xs font-bold"
+                      style={{ background: 'rgba(255,255,255,0.07)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                    >
+                      {FLAG[lang]} {lang.toUpperCase()}
+                    </button>
+                  ))}
+                  {!entry.enOnly && (
+                    <button
+                      onClick={() => downloadZip(entry)}
+                      className="h-8 px-4 rounded-lg text-xs font-bold"
+                      style={{ background: '#fff', color: '#000' }}
+                    >
+                      ⬇ ZIP
+                    </button>
+                  )}
+                </>
               )}
               {entry.form && (
                 <button
