@@ -8,7 +8,7 @@ import {
   getProvider, setProvider,
   translateTexts, translateAboutHtml, applyGlossaryPostProcessing,
 } from '../lib/api';
-import { buildPage, buildAboutHtmlStr } from '../lib/generator';
+import { buildPage, buildAboutHtmlStr, buildMultilingualPage } from '../lib/generator';
 import { saveToHistory, getHistory } from '../lib/storage';
 import JSZip from 'jszip';
 
@@ -433,6 +433,9 @@ export default function Builder() {
   const [error, setError] = useState('');
   const [pages, setPages] = useState(null);   // { en, es, it, fr, de } or { en }
   const [enOnly, setEnOnly] = useState(false);
+  const [isMono, setIsMono] = useState(false);
+  const [monoPage, setMonoPage] = useState(null);
+  const [cachedTranslations, setCachedTranslations] = useState(null);
   const [activeTab, setActiveTab] = useState('en');
   const [toast, setToast] = useState('');
   const [editingEntry, setEditingEntry] = useState(null);
@@ -457,6 +460,24 @@ export default function Builder() {
     setForm(f => ({ ...f, [field]: { ...f[field], [lang]: val } }));
   }
 
+  function buildEnStrings(f) {
+    return {
+      courseLevel:      f.courseLevel,
+      courseTitle:      f.courseTitle,
+      courseSubtitle:   f.courseSubtitle,
+      ctaText:          f.ctaText,
+      freeLessonTitle:  f.freeLessonTitle,
+      beyondSuffix:     'You Also Get',
+      unlimitedTitle:   'Unlimited Access to all Courses',
+      activateSound:    'Activate Sound',
+      freeLessonBtn:    'Free Lesson',
+      coursesLabel:     'Courses',
+      biteLabel:        'Bite-Sized Classes',
+      accessLabel:      'Access',
+      allRightsReserved:'All rights reserved.',
+    };
+  }
+
   async function generate() {
     // Check that the current provider has a key set
     const currentProvider = provider;
@@ -473,7 +494,7 @@ export default function Builder() {
       return;
     }
 
-    setError(''); setStep(1); setPages(null);
+    setError(''); setStep(1); setPages(null); setMonoPage(null); setIsMono(false);
     const glossary = getGlossary();
 
     try {
@@ -501,21 +522,7 @@ export default function Builder() {
 
       // Step 3: Build pages
       setStep(3);
-      const enStrings = {
-        courseLevel:      form.courseLevel,
-        courseTitle:      form.courseTitle,
-        courseSubtitle:   form.courseSubtitle,
-        ctaText:          form.ctaText,
-        freeLessonTitle:  form.freeLessonTitle,
-        beyondSuffix:     'You Also Get',
-        unlimitedTitle:   'Unlimited Access to all Courses',
-        activateSound:    'Activate Sound',
-        freeLessonBtn:    'Free Lesson',
-        coursesLabel:     'Courses',
-        biteLabel:        'Bite-Sized Classes',
-        accessLabel:      'Access',
-        allRightsReserved:'All rights reserved.',
-      };
+      const enStrings = buildEnStrings(form);
 
       const result = {};
       for (const { key } of LANGS) {
@@ -523,8 +530,11 @@ export default function Builder() {
         result[key] = buildPage(form, key, strings, aboutByLang[key]);
       }
 
+      setCachedTranslations({ uiTrans, aboutByLang, enStrings });
       setPages(result);
       setEnOnly(false);
+      setIsMono(false);
+      setMonoPage(null);
       setActiveTab('en');
       saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: result, enOnly: false });
       setStep(4);
@@ -561,6 +571,78 @@ export default function Builder() {
     setStep(4);
   }
 
+  async function generateMono() {
+    setError(''); setMonoPage(null); setPages(null); setIsMono(false);
+
+    let uiTrans, aboutByLang, enStrings;
+
+    if (cachedTranslations) {
+      ({ uiTrans, aboutByLang, enStrings } = cachedTranslations);
+    } else {
+      const currentProvider = provider;
+      if (currentProvider === 'anthropic' && !getAnthropicKey()) {
+        setError('Enter your Anthropic API key to generate in 5 languages.');
+        return;
+      }
+      if (currentProvider === 'openai' && !getOpenAIKey()) {
+        setError('Enter your OpenAI API key to generate in 5 languages.');
+        return;
+      }
+
+      setStep(1);
+      const glossary = getGlossary();
+      try {
+        uiTrans = await translateTexts(form, glossary);
+        setStep(2);
+        const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
+        const enAboutHtml = buildAboutHtmlStr(aboutBase, 'en');
+        const [aboutEs, aboutIt, aboutFr, aboutDe] = await Promise.all([
+          translateAboutHtml(buildAboutHtmlStr(aboutBase, 'es'), 'es', glossary),
+          translateAboutHtml(buildAboutHtmlStr(aboutBase, 'it'), 'it', glossary),
+          translateAboutHtml(buildAboutHtmlStr(aboutBase, 'fr'), 'fr', glossary),
+          translateAboutHtml(buildAboutHtmlStr(aboutBase, 'de'), 'de', glossary),
+        ]);
+        aboutByLang = {
+          en: enAboutHtml,
+          es: applyGlossaryPostProcessing(aboutEs, 'es', glossary),
+          it: applyGlossaryPostProcessing(aboutIt, 'it', glossary),
+          fr: applyGlossaryPostProcessing(aboutFr, 'fr', glossary),
+          de: applyGlossaryPostProcessing(aboutDe, 'de', glossary),
+        };
+        enStrings = buildEnStrings(form);
+        setCachedTranslations({ uiTrans, aboutByLang, enStrings });
+      } catch (err) {
+        setError(err.message || String(err));
+        setStep(0);
+        return;
+      }
+    }
+
+    setStep(3);
+    const allStrings = {};
+    for (const { key } of LANGS) {
+      allStrings[key] = key === 'en' ? enStrings : { ...enStrings, ...(uiTrans[key] || {}) };
+    }
+
+    const html = buildMultilingualPage(form, allStrings, aboutByLang);
+    setMonoPage(html);
+    setIsMono(true);
+    saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: { mono: html }, enOnly: false, isMono: true });
+    setStep(4);
+  }
+
+  function copyMono() {
+    navigator.clipboard.writeText(monoPage).then(() => setToast('Copied ✓'));
+  }
+
+  function downloadMono() {
+    const slug = form.pageSlug || 'lp-artista';
+    const blob = new Blob([monoPage], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `${slug}.html`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function downloadZip() {
     const zip = new JSZip();
     const slug = form.pageSlug || 'lp-artista';
@@ -587,13 +669,11 @@ export default function Builder() {
   }
 
   function saveHistory() {
-    saveToHistory({
-      artistName: form.artistName,
-      pageSlug: form.pageSlug,
-      form,
-      pages,
-      enOnly,
-    });
+    if (isMono) {
+      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: { mono: monoPage }, enOnly: false, isMono: true });
+    } else {
+      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages, enOnly });
+    }
     setToast('Saved to history ✓');
   }
 
@@ -602,6 +682,8 @@ export default function Builder() {
     setForm(DEFAULT_FORM);
     setStep(0);
     setPages(null);
+    setMonoPage(null);
+    setIsMono(false);
     setError('');
   }
 
@@ -787,12 +869,71 @@ export default function Builder() {
           >
             → English only
           </button>
+          <button
+            onClick={generateMono}
+            className="h-12 px-5 rounded-xl font-black text-sm tracking-wide transition-opacity whitespace-nowrap"
+            style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '0.72')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+          >
+            🌐 Single multilingual file
+          </button>
         </div>
       )}
 
       {/* Progress */}
       {busy && (
         <ProgressBar currentStep={step} />
+      )}
+
+      {/* Mono results */}
+      {isMono && monoPage && step === 4 && (
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <p className="text-sm font-bold text-gray-400">✓ Single multilingual file generated</p>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={saveHistory}
+                className="h-8 px-4 rounded-lg text-xs font-bold transition-colors"
+                style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.12)' }}
+              >
+                Save to History
+              </button>
+              <button
+                onClick={() => { setStep(0); setIsMono(false); setMonoPage(null); }}
+                className="h-8 px-4 rounded-lg text-xs font-bold"
+                style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.07)' }}
+              >
+                ← Edit form
+              </button>
+            </div>
+          </div>
+          <div className="mb-3 px-4 py-2.5 rounded-xl text-xs font-semibold" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            Single file · All 5 languages · Language auto-detected from browser
+          </div>
+          <div className="flex gap-2 mb-3 flex-wrap">
+            <button
+              onClick={copyMono}
+              className="h-8 px-3 rounded-lg text-xs font-bold"
+              style={{ background: 'rgba(255,255,255,0.08)', color: '#fff' }}
+            >
+              Copy HTML
+            </button>
+            <button
+              onClick={downloadMono}
+              className="h-8 px-3 rounded-lg text-xs font-bold"
+              style={{ background: 'rgba(255,255,255,0.08)', color: '#fff' }}
+            >
+              ⬇ {form.pageSlug || 'lp-artista'}.html
+            </button>
+          </div>
+          <textarea
+            readOnly
+            className="w-full rounded-xl px-4 py-3 text-xs font-mono resize-y"
+            style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', color: 'rgba(255,255,255,0.45)', minHeight: 320, lineHeight: 1.6, outline: 'none' }}
+            value={monoPage}
+          />
+        </div>
       )}
 
       {/* Results */}

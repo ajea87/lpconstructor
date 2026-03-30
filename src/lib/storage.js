@@ -19,6 +19,7 @@ export function saveToHistory(entry) {
     form: entry.form || null,
     pages: entry.pages,
     enOnly: entry.enOnly || false,
+    isMono: entry.isMono || false,
   };
   history.unshift(newEntry);
   localStorage.setItem(KEY, JSON.stringify(history.slice(0, 20)));

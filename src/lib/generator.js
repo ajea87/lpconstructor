@@ -539,3 +539,326 @@ ${buildSelector(baseSlug)}
 </body>
 </html>`;
 }
+
+// ── Multilingual single-file builder ─────────────────────────────────────────
+
+const ML_LANGS = ['en', 'es', 'it', 'fr', 'de'];
+
+function buildD_ml(form, lang, strings) {
+  let heroVideoId, freeLessonVideoId;
+  if (form.heroVideoIds) {
+    heroVideoId = form.heroVideoIds[lang] || form.heroVideoIds.en || '';
+    freeLessonVideoId = form.freeLessonVideoIds?.[lang] || form.freeLessonVideoIds?.en || '';
+  } else {
+    const videos = form.wistiaVideos || {};
+    const enV = videos.en || {};
+    const langV = videos[lang] || {};
+    heroVideoId = langV.heroVideoId || enV.heroVideoId || '';
+    freeLessonVideoId = langV.freeLessonVideoId || enV.freeLessonVideoId || '';
+  }
+  return {
+    ...strings,
+    artistName: form.artistName || '',
+    artistRole: form.artistRole || '',
+    ctaUrl: form.ctaUrls ? (form.ctaUrls[lang] || form.ctaUrls.en || '#') : (form.ctaUrl || '#'),
+    heroVideoId,
+    freeLessonVideoId,
+    activateSound: strings.activateSound || 'Activate Sound',
+    freeLessonBtn: strings.freeLessonBtn || 'Free Lesson',
+    coursesLabel: strings.coursesLabel || 'Courses',
+    biteLabel: strings.biteLabel || 'Bite-Sized Classes',
+    accessLabel: strings.accessLabel || 'Access',
+    allRightsReserved: strings.allRightsReserved || 'All rights reserved.',
+  };
+}
+
+function extractStyleBlocks(html) {
+  const re = /<style[\s\S]*?<\/style>/gi;
+  const results = [];
+  let m;
+  while ((m = re.exec(html)) !== null) results.push(m[0]);
+  return results.join('\n');
+}
+
+function buildHeroBlock(d, lang) {
+  const heroId = d.heroVideoId || 'HERO_ID';
+  return `<div class="hero-section" style="background:#000;color:#fff;text-align:center;font-family:'Montserrat',sans-serif;margin:0;width:100%;">
+  <div class="hero-inner" style="max-width:1180px;margin:0 auto;">
+    <div class="hero-grid">
+      <div class="hero-video" id="heroVideoWrap-${lang}">
+        <script src="https://fast.wistia.com/embed/medias/${heroId}.jsonp" async><\/script>
+        <div class="wistia_embed wistia_async_${heroId} videoFoam=true autoPlay=true muted=true playerColor=000000 endVideoBehavior=loop" style="position:absolute;inset:0;width:100%;height:100%;">&nbsp;</div>
+        <button class="sound-btn" id="activateSoundBtn-${lang}" type="button" aria-label="${d.activateSound}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+          ${d.activateSound}
+        </button>
+      </div>
+      <div class="hero-right">
+        <div class="hero-kicker">${d.courseLevel}</div>
+        <h1 class="hero-title" style="margin-bottom:10px;">${d.courseTitle}</h1>
+        <p class="hero-subtitle" style="font-size:14px;font-weight:700;opacity:.9;margin-bottom:16px;">${d.courseSubtitle}</p>
+        <div style="opacity:.78;font-weight:650;font-size:13px;line-height:1.3;margin-top:8px;color:rgba(255,255,255,0.78)!important;">
+          Instructor: ${d.artistName},<br/>${d.artistRole}
+        </div>
+        <div class="hero-actions">
+          <a class="hero-btn primary" href="${d.ctaUrl}" target="_blank" rel="noopener">${d.ctaText}</a>
+          <button class="hero-btn outline" type="button" id="openFreeLesson-${lang}" data-wistia="${d.freeLessonVideoId}" data-title="${d.freeLessonTitle || ''}">
+            <span class="play" aria-hidden="true"></span>
+            ${d.freeLessonBtn || 'Free Lesson'}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+function buildSharedHeroModal() {
+  return `<div class="video-modal" id="heroVideoModal" aria-hidden="true">
+  <div class="video-modal__panel" role="dialog" aria-modal="true">
+    <div class="video-modal__topbar">
+      <span></span>
+      <div class="video-modal__title" id="heroModalTitle"></div>
+      <button class="video-modal__close" type="button" id="closeHeroModal" aria-label="Close">\xd7</button>
+    </div>
+    <div class="video-modal__video" id="heroModalWrap"></div>
+  </div>
+</div>`;
+}
+
+function buildAboutBlock(aboutHtml) {
+  let content = aboutHtml.replace(/<style[\s\S]*?<\/style>/gi, '');
+  const idx = content.indexOf('<div class="ed4-modal"');
+  if (idx !== -1) content = content.substring(0, idx);
+  return content.trim();
+}
+
+function buildSharedAboutModal() {
+  return `<div class="ed4-modal" id="ed4VideoModal" aria-hidden="true">
+  <div class="ed4-modal-card" role="dialog" aria-modal="true">
+    <div class="ed4-modal-top">
+      <div class="ed4-modal-title" id="ed4VideoTitle">Free lesson</div>
+      <button class="ed4-close" type="button" id="ed4VideoClose" aria-label="Close">\xd7</button>
+    </div>
+    <div class="ed4-wistia-wrap" id="ed4WistiaWrap"></div>
+  </div>
+</div>`;
+}
+
+function buildBeyondBlock(d) {
+  return buildBeyondSection(d).replace(/<style[\s\S]*?<\/style>/gi, '');
+}
+
+function buildMLSelector() {
+  return `
+<div id="language-switcher" style="position:fixed;bottom:24px;right:24px;z-index:9999;font-family:'Montserrat',sans-serif;">
+  <div id="lang-btn" style="background:#000;color:#fff;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:all .3s;font-size:28px;" aria-label="Language switcher">\ud83c\uddec\ud83c\udde7</div>
+  <div id="lang-options" style="position:absolute;bottom:70px;right:0;background:#000;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);opacity:0;visibility:hidden;transform:translateY(10px);transition:all .3s;width:180px;">
+    <a class="lang-link" onclick="showLang('en')" style="cursor:pointer;">\ud83c\uddec\ud83c\udde7 English</a>
+    <a class="lang-link" onclick="showLang('es')" style="cursor:pointer;">\ud83c\uddea\ud83c\uddf8 Espa\xf1ol</a>
+    <a class="lang-link" onclick="showLang('it')" style="cursor:pointer;">\ud83c\uddee\ud83c\uddf9 Italiano</a>
+    <a class="lang-link" onclick="showLang('fr')" style="cursor:pointer;">\ud83c\uddeb\ud83c\uddf7 Fran\xe7ais</a>
+    <a class="lang-link" onclick="showLang('de')" style="cursor:pointer;">\ud83c\udde9\ud83c\uddea Deutsch</a>
+  </div>
+</div>
+<style>
+  .lang-link{display:block;padding:14px 20px;color:#fff;text-decoration:none;font-size:12px;font-weight:700;transition:background .2s;}
+  .lang-link:hover{background:rgba(255,255,255,.15);}
+  #language-switcher:hover #lang-btn{transform:scale(1.12);}
+</style>`;
+}
+
+function buildMLScript(dByLang) {
+  const heroApiInits = ML_LANGS.map(lang => {
+    const vid = dByLang[lang].heroVideoId || '';
+    if (!vid) return '';
+    return `window._wq.push({id:'${vid}',options:{autoPlay:true,muted:true,playerColor:'000000',endVideoBehavior:'loop'},onReady:function(v){if(v.container&&!v.container.closest('#heroVideoModal'))_heroApis['${lang}']=v;}});`;
+  }).filter(Boolean).join('\n  ');
+
+  const soundBtnInits = ML_LANGS.map(lang =>
+    `(function(){var sb=document.getElementById('activateSoundBtn-${lang}');if(sb)sb.addEventListener('click',function(){var a=_heroApis['${lang}'];if(a){a.time(0);a.unmute();a.volume(1);a.play();}sb.classList.add('is-hidden');});})();`
+  ).join('\n  ');
+
+  return `<script>
+(function(){
+  /* ─ Language switching ─ */
+  var _flags={en:'\ud83c\uddec\ud83c\udde7',es:'\ud83c\uddea\ud83c\uddf8',it:'\ud83c\uddee\ud83c\uddf9',fr:'\ud83c\uddeb\ud83c\uddf7',de:'\ud83c\udde9\ud83c\uddea'};
+  var _supported=['en','es','it','fr','de'];
+  function showLang(code){
+    document.querySelectorAll('.lang-block').forEach(function(el){el.hidden=(el.dataset.lang!==code);});
+    var lb=document.getElementById('lang-btn');
+    if(lb)lb.innerHTML=_flags[code]||_flags.en;
+    localStorage.setItem('forced-lang',code);
+    var lo=document.getElementById('lang-options');
+    if(lo){lo.style.opacity='0';lo.style.visibility='hidden';lo.style.transform='translateY(10px)';}
+  }
+  window.showLang=showLang;
+  var _forced=localStorage.getItem('forced-lang');
+  var _nav=(navigator.language||'en').toLowerCase().split('-')[0];
+  var _lang=_forced&&_supported.indexOf(_forced)>-1?_forced:(_supported.indexOf(_nav)>-1?_nav:'en');
+  showLang(_lang);
+  var _lb=document.getElementById('lang-btn'),_lo=document.getElementById('lang-options');
+  if(_lb&&_lo){
+    _lb.addEventListener('click',function(e){e.stopPropagation();var o=_lo.style.opacity==='1';_lo.style.opacity=o?'0':'1';_lo.style.visibility=o?'hidden':'visible';_lo.style.transform=o?'translateY(10px)':'translateY(0)';});
+    document.addEventListener('click',function(){_lo.style.opacity='0';_lo.style.visibility='hidden';_lo.style.transform='translateY(10px)';});
+  }
+
+  /* ─ Hero: Wistia API & sound buttons ─ */
+  var _heroApis={};
+  window._wq=window._wq||[];
+  ${heroApiInits}
+  ${soundBtnInits}
+
+  /* ─ Hero: free-lesson modal ─ */
+  var _hm=document.getElementById('heroVideoModal'),_hmt=document.getElementById('heroModalTitle'),_hmc=document.getElementById('closeHeroModal'),_hmw=document.getElementById('heroModalWrap');
+  function _openHM(id,title){if(!_hm||!id)return;if(_hmt)_hmt.textContent=title;if(_hmw)_hmw.innerHTML='<iframe src="https://fast.wistia.net/embed/iframe/'+id+'?autoPlay=true&playerColor=000000&fitStrategy=fill" allowtransparency="true" allowfullscreen frameborder="0" allow="autoplay;fullscreen" style="position:absolute;inset:0;width:100%;height:100%;border:0;"><\\/iframe>';_hm.classList.add('is-open');_hm.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';if(_hmc)_hmc.focus();document.addEventListener('keydown',_hKey);}
+  function _closeHM(){if(!_hm)return;if(_hmw)_hmw.innerHTML='';_hm.classList.remove('is-open');_hm.setAttribute('aria-hidden','true');document.body.style.overflow='';document.removeEventListener('keydown',_hKey);}
+  function _hKey(e){if(e.key==='Escape')_closeHM();}
+  document.querySelectorAll('[id^="openFreeLesson-"]').forEach(function(btn){btn.addEventListener('click',function(){_openHM(btn.dataset.wistia||'',btn.dataset.title||'');});});
+  if(_hmc)_hmc.addEventListener('click',function(e){e.stopPropagation();_closeHM();});
+  if(_hm)_hm.addEventListener('click',function(e){if(e.target===_hm)_closeHM();});
+
+  /* ─ About: accordion (works across all lang-blocks) ─ */
+  document.querySelectorAll('[id="ed4AccordionCourses"]').forEach(function(root){
+    var its=Array.from(root.querySelectorAll('.ed4-item'));
+    its.forEach(function(item){
+      var b=item.querySelector('.ed4-btn');
+      if(!b)return;
+      b.addEventListener('click',function(){
+        var o=item.classList.contains('is-open');
+        its.forEach(function(it){it.classList.remove('is-open');var bb=it.querySelector('.ed4-btn');if(bb)bb.setAttribute('aria-expanded','false');});
+        if(o)return;
+        item.classList.add('is-open');b.setAttribute('aria-expanded','true');
+      });
+    });
+  });
+
+  /* ─ About: free-lesson modal ─ */
+  var _am=document.getElementById('ed4VideoModal'),_ac=document.getElementById('ed4VideoClose'),_at=document.getElementById('ed4VideoTitle'),_aw=document.getElementById('ed4WistiaWrap');
+  function _openAM(id,title){if(!_am)return;if(_at)_at.textContent=title;if(_aw)_aw.innerHTML='<iframe src="https://fast.wistia.net/embed/iframe/'+id+'?autoPlay=true&playerColor=000000&fitStrategy=fill" allowtransparency="true" allowfullscreen frameborder="0" allow="autoplay;fullscreen" style="position:absolute;inset:0;width:100%;height:100%;border:0;"><\\/iframe>';_am.classList.add('is-open');_am.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';if(_ac)_ac.focus();document.addEventListener('keydown',_aKey);}
+  function _closeAM(){if(!_am)return;if(_aw)_aw.innerHTML='';_am.classList.remove('is-open');_am.setAttribute('aria-hidden','true');document.body.style.overflow='';document.removeEventListener('keydown',_aKey);}
+  function _aKey(e){if(e.key==='Escape')_closeAM();}
+  document.querySelectorAll('.ed4-free').forEach(function(btn){btn.addEventListener('click',function(){_openAM(btn.dataset.wistia,btn.dataset.title);});});
+  if(_ac)_ac.addEventListener('click',_closeAM);
+  if(_am)_am.addEventListener('click',function(e){if(e.target===_am)_closeAM();});
+})();
+<\/script>`;
+}
+
+export function buildMultilingualPage(form, allStrings, allAboutHtmls) {
+  const dByLang = {};
+  for (const lang of ML_LANGS) {
+    dByLang[lang] = buildD_ml(form, lang, allStrings[lang]);
+  }
+
+  const allCss = [
+    extractStyleBlocks(buildHeroSection(dByLang.en)),
+    extractStyleBlocks(allAboutHtmls.en),
+    extractStyleBlocks(buildBeyondSection(dByLang.en)),
+    extractStyleBlocks(buildUnlimitedSection(dByLang.en)),
+  ].join('\n');
+
+  function langBlock(lang, content, first) {
+    return `<div data-lang="${lang}" class="lang-block"${first ? '' : ' hidden'}>${content}</div>`;
+  }
+
+  const heroBlocks = ML_LANGS.map((lang, i) =>
+    langBlock(lang, buildHeroBlock(dByLang[lang], lang), i === 0)
+  ).join('\n');
+
+  const aboutBlocks = ML_LANGS.map((lang, i) =>
+    langBlock(lang, buildAboutBlock(allAboutHtmls[lang]), i === 0)
+  ).join('\n');
+
+  const beyondBlocks = ML_LANGS.map((lang, i) =>
+    langBlock(lang, buildBeyondBlock(dByLang[lang]), i === 0)
+  ).join('\n');
+
+  const unlimitedHeaders = ML_LANGS.map((lang, i) => {
+    const d = dByLang[lang];
+    return langBlock(lang,
+      `<div class="ed-uac__header"><h2 class="ed-uac__title">${d.unlimitedTitle || 'Unlimited Access to all Courses'}</h2><a class="ed-uac__btn" href="${d.ctaUrl}" target="_blank" rel="noopener">${d.ctaText}</a></div>`,
+      i === 0);
+  }).join('\n  ');
+
+  const row1 = tiles(ROW1_IMGS);
+  const row2 = tiles(ROW2_IMGS);
+  const row3 = tiles(ROW3_IMGS);
+
+  const footerBlocks = ML_LANGS.map((lang, i) => {
+    const d = dByLang[lang];
+    return langBlock(lang, `<footer class="ed-footer" role="contentinfo">
+  <div class="ed-footer__wrap">
+    <div class="ed-footer__divider" aria-hidden="true"></div>
+    <div class="ed-footer__logo" aria-hidden="true"><img src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2164751305/settings_images/a873d5-a7a4-e2ba-0222-2a6224428c21_2946885f-ffea-485a-9de3-55c9ebec76f1.png" alt="" loading="lazy"/></div>
+    <div class="ed-footer__text">\xa9 2026 Ermes Dance Academy. ${d.allRightsReserved || 'All rights reserved.'}</div>
+  </div>
+</footer>`, i === 0);
+  }).join('\n');
+
+  const courseTitle = (allStrings.en && allStrings.en.courseTitle) || form.courseTitle || 'Course';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${courseTitle} | Ermes Dance Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://fast.wistia.com/assets/external/E-v1.js" async><\/script>
+<style>*{box-sizing:border-box;}body{margin:0;padding:0;background:#000;}</style>
+${allCss}
+</head>
+<body>
+<style>
+  .eda-header{background:#000000;padding:5px 0;text-align:center;border-bottom:1px solid rgba(255,255,255,0.07);width:100%;}
+  .eda-header a{display:inline-block;line-height:0;}
+  .eda-header img{height:auto;width:150px;display:block;}
+</style>
+<header class="eda-header">
+  <a href="https://academy.ermesdance.com" target="_blank" rel="noopener">
+    <img src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2164751305/settings_images/a873d5-a7a4-e2ba-0222-2a6224428c21_2946885f-ffea-485a-9de3-55c9ebec76f1.png" alt="Ermes Dance Academy" loading="eager">
+  </a>
+</header>
+${heroBlocks}
+${buildSharedHeroModal()}
+${aboutBlocks}
+${buildSharedAboutModal()}
+${beyondBlocks}
+<section class="ed-uac">
+  <div class="ed-uac__sidefade left" aria-hidden="true"></div>
+  <div class="ed-uac__sidefade right" aria-hidden="true"></div>
+  <div class="ed-uac__overlay" aria-hidden="true"></div>
+  ${unlimitedHeaders}
+  <div class="ed-uac__rows" aria-label="Course covers marquee">
+    <div class="ed-row ed-row--ltr ed-row--topfade"><div class="ed-track">${row1}</div></div>
+    <div class="ed-row ed-row--rtl ed-row--offset"><div class="ed-track">${row2}</div></div>
+    <div class="ed-row ed-row--ltr"><div class="ed-track">${row3}</div></div>
+  </div>
+</section>
+${footerBlocks}
+${buildMLSelector()}
+${buildMLScript(dByLang)}
+<script>
+(function(){
+  var el=document.querySelector('.hero-section');
+  if(!el)return;
+  var parent=el.parentElement,limit=8;
+  while(parent&&limit-->0){
+    var tag=parent.tagName.toLowerCase();
+    if(tag==='body'||tag==='main')break;
+    parent.style.setProperty('max-width','100%','important');
+    parent.style.setProperty('padding-left','0','important');
+    parent.style.setProperty('padding-right','0','important');
+    parent.style.setProperty('margin-left','0','important');
+    parent.style.setProperty('margin-right','0','important');
+    parent.style.setProperty('width','100%','important');
+    parent=parent.parentElement;
+  }
+})();
+<\/script>
+</body>
+</html>`;
+}
