@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getHistory, deleteFromHistory } from '../lib/storage';
+import { getHistory, deleteFromHistory, getEmailHistory, deleteEmailFromHistory } from '../lib/storage';
 import JSZip from 'jszip';
 
 const LANGS = ['en', 'es', 'it', 'fr', 'de'];
@@ -17,15 +17,37 @@ function formatDate(iso) {
 }
 
 export default function History() {
-  const [items, setItems] = useState([]);
+  const [items,      setItems]      = useState([]);
+  const [emailItems, setEmailItems] = useState([]);
   const navigate = useNavigate();
 
-  useEffect(() => { setItems(getHistory()); }, []);
+  useEffect(() => {
+    setItems(getHistory());
+    setEmailItems(getEmailHistory());
+  }, []);
 
   function handleDelete(id) {
     if (!confirm('Delete this entry?')) return;
     deleteFromHistory(id);
     setItems(getHistory());
+  }
+
+  function handleDeleteEmail(id) {
+    if (!confirm('Delete this email?')) return;
+    deleteEmailFromHistory(id);
+    setEmailItems(getEmailHistory());
+  }
+
+  function copyEmailHtml(html) {
+    navigator.clipboard.writeText(html);
+  }
+
+  function downloadEmailHtml(entry) {
+    const name = (entry.subject || 'email').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'email';
+    const blob = new Blob([entry.html || ''], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = name + '.html'; a.click();
+    URL.revokeObjectURL(url);
   }
 
   async function downloadZip(entry) {
@@ -85,7 +107,7 @@ export default function History() {
     URL.revokeObjectURL(url);
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && emailItems.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-16 text-center">
         <div className="text-4xl mb-4">🕓</div>
@@ -203,6 +225,65 @@ export default function History() {
           </div>
         ))}
       </div>
+
+      {/* ── Email history ────────────────────────────────────────────── */}
+      {emailItems.length > 0 && (
+        <>
+          <h2 className="text-xl font-black mt-12 mb-1">Emails</h2>
+          <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            {emailItems.length} {emailItems.length === 1 ? 'email' : 'emails'} saved locally.
+          </p>
+          <div className="space-y-4">
+            {emailItems.map(entry => (
+              <div
+                key={entry.id}
+                className="rounded-xl p-5"
+                style={{ background: '#111', border: '1px solid #222' }}
+              >
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <p className="font-black text-base">{entry.subject || 'Untitled Email'}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      {entry.html?.length ?? 0} chars
+                    </p>
+                  </div>
+                  <div className="text-right flex flex-col items-end gap-1">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(100,200,255,0.08)', color: 'rgba(100,200,255,0.7)' }}>
+                      📧 email
+                    </span>
+                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      {formatDate(entry.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => copyEmailHtml(entry.html || '')}
+                    className="h-8 px-3 rounded-lg text-xs font-bold"
+                    style={{ background: 'rgba(255,255,255,0.07)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                  >
+                    Copy HTML
+                  </button>
+                  <button
+                    onClick={() => downloadEmailHtml(entry)}
+                    className="h-8 px-3 rounded-lg text-xs font-bold"
+                    style={{ background: '#fff', color: '#000' }}
+                  >
+                    ⬇ Download
+                  </button>
+                  <button
+                    onClick={() => handleDeleteEmail(entry.id)}
+                    className="h-8 px-3 rounded-lg text-xs font-bold ml-auto"
+                    style={{ background: 'rgba(255,50,50,0.08)', color: 'rgba(255,80,80,0.7)', border: '1px solid rgba(255,50,50,0.15)' }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

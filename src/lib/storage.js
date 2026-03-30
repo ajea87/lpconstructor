@@ -49,3 +49,38 @@ export function deleteFromHistory(id) {
   const history = getHistory().filter(e => e.id !== id);
   localStorage.setItem(KEY, JSON.stringify(history));
 }
+
+// ── Email history ─────────────────────────────────────────────────────────────
+
+const EMAIL_KEY = 'ermes_email_history';
+
+export function getEmailHistory() {
+  try {
+    const raw = localStorage.getItem(EMAIL_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+export function saveEmailToHistory(entry) {
+  const history = getEmailHistory();
+  const newEntry = {
+    id: Date.now().toString(),
+    createdAt: new Date().toISOString(),
+    subject: entry.subject || 'Untitled Email',
+    html: entry.html || '',
+  };
+  console.log('[email-storage] Saving email, html length:', newEntry.html.length, 'chars');
+  history.unshift(newEntry);
+  try {
+    localStorage.setItem(EMAIL_KEY, JSON.stringify(history.slice(0, 20)));
+    console.log('[email-storage] Saved OK');
+  } catch (e) {
+    console.error('[email-storage] Save failed:', e);
+  }
+  return newEntry;
+}
+
+export function deleteEmailFromHistory(id) {
+  const history = getEmailHistory().filter(e => e.id !== id);
+  localStorage.setItem(EMAIL_KEY, JSON.stringify(history));
+}

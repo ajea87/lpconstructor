@@ -1,9 +1,10 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
 const NAV = [
-  { to: '/',          icon: '⚡', label: 'Builder'  },
-  { to: '/glossary',  icon: '📖', label: 'Glossary' },
-  { to: '/history',   icon: '🕓', label: 'History'  },
+  { to: '/',               icon: '⚡', label: 'Builder'       },
+  { to: '/email-builder',  icon: '📧', label: 'Email Builder' },
+  { to: '/glossary',       icon: '📖', label: 'Glossary'      },
+  { to: '/history',        icon: '🕓', label: 'History'       },
 ];
 
 export default function Layout() {
