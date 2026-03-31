@@ -20,6 +20,8 @@ export function saveToHistory(entry) {
     pages: entry.pages,
     enOnly: entry.enOnly || false,
     isMono: entry.isMono || false,
+    baseLang: entry.baseLang || 'en',
+    generatedLangs: entry.generatedLangs || Object.keys(entry.pages || {}),
   };
 
   // Diagnostic logging

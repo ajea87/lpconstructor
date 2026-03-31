@@ -23,7 +23,9 @@ const LANGS = [
   { key: 'de', label: 'DE', flag: '🇩🇪' },
 ];
 
-const FILE_SUFFIX = { en: '', es: '-es', it: '-it', fr: '-fr', de: '-de' };
+const LANG_NAMES = { en: 'English', es: 'Español', it: 'Italiano', fr: 'Français', de: 'Deutsch' };
+const BASE_LANG_KEY = 'base-lang';
+const TARGET_LANGS_KEY = 'target-langs';
 
 const DEFAULT_FORM = {
   pageSlug: '',
@@ -459,8 +461,11 @@ export default function Builder() {
   const [form, setForm] = useState(DEFAULT_FORM);
   const [step, setStep] = useState(0);        // 0 = idle, 1-4 = progress
   const [error, setError] = useState('');
-  const [pages, setPages] = useState(null);   // { en, es, it, fr, de } or { en }
-  const [enOnly, setEnOnly] = useState(false);
+  const [pages, setPages] = useState(null);   // { en, es, it, fr, de } or subset
+  const [baseLang, setBaseLangLocal] = useState(() => localStorage.getItem(BASE_LANG_KEY) || 'en');
+  const [targetLangs, setTargetLangs] = useState(() => {
+    try { const s = localStorage.getItem(TARGET_LANGS_KEY); return s ? JSON.parse(s) : ['en','es','it','fr','de']; } catch { return ['en','es','it','fr','de']; }
+  });
   const [isMono, setIsMono] = useState(false);
   const [monoPage, setMonoPage] = useState(null);
   const [cachedTranslations, setCachedTranslations] = useState(null);
@@ -490,7 +495,7 @@ export default function Builder() {
     setForm(f => ({ ...f, [field]: { ...f[field], [lang]: val } }));
   }
 
-  function buildEnStrings(f) {
+  function buildBaseStrings(f) {
     return {
       courseLevel:      f.courseLevel,
       courseTitle:      f.courseTitle,
@@ -508,67 +513,83 @@ export default function Builder() {
     };
   }
 
+  function setBaseLang(lang) {
+    localStorage.setItem(BASE_LANG_KEY, lang);
+    setBaseLangLocal(lang);
+    setTargetLangs(prev => {
+      const next = prev.includes(lang) ? prev : [...prev, lang];
+      localStorage.setItem(TARGET_LANGS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function toggleTargetLang(lang) {
+    if (lang === baseLang) return;
+    setTargetLangs(prev => {
+      const next = prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang];
+      localStorage.setItem(TARGET_LANGS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function fileSuffix(lang) {
+    return lang === baseLang ? '' : '-' + lang;
+  }
+
   async function generate() {
-    // Check that the current provider has a key set
-    const currentProvider = provider;
-    if (currentProvider === 'anthropic' && !getAnthropicKey()) {
-      setError('Enter your Anthropic API key.');
-      return;
-    }
-    if (currentProvider === 'openai' && !getOpenAIKey()) {
-      setError('Enter your OpenAI API key.');
-      return;
-    }
-    if (!form.aboutData.courses?.length > 0 && !form.aboutData.introText) {
-      setError('Add at least one course or intro text in the About section.');
-      return;
-    }
+    const langsToTranslate = targetLangs.filter(l => l !== baseLang);
 
     setError(''); setStep(1); setPages(null); setMonoPage(null); setIsMono(false);
     const glossary = getGlossary();
 
     try {
-      // Step 1: Translate UI texts
-      const uiTrans = await translateTexts(form, glossary);
-
-      // Step 2: Translate About — single call for all 4 langs (text extraction reduces tokens ~95%)
-      setStep(2);
+      let uiTrans = {};
+      let aboutByLang = {};
       const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
-      const enAboutHtml = buildAboutHtmlStr(aboutBase, 'en');
-      const aboutHtmlsByLang = {
-        es: buildAboutHtmlStr(aboutBase, 'es'),
-        it: buildAboutHtmlStr(aboutBase, 'it'),
-        fr: buildAboutHtmlStr(aboutBase, 'fr'),
-        de: buildAboutHtmlStr(aboutBase, 'de'),
-      };
-      const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(enAboutHtml, aboutHtmlsByLang, glossary);
-      setCacheInfo({ fromCache, textCount });
+      const baseAboutHtml = buildAboutHtmlStr(aboutBase, baseLang);
 
-      const aboutByLang = {
-        en: enAboutHtml,
-        es: applyGlossaryPostProcessing(aboutTranslated.es, 'es', glossary),
-        it: applyGlossaryPostProcessing(aboutTranslated.it, 'it', glossary),
-        fr: applyGlossaryPostProcessing(aboutTranslated.fr, 'fr', glossary),
-        de: applyGlossaryPostProcessing(aboutTranslated.de, 'de', glossary),
-      };
+      if (langsToTranslate.length > 0) {
+        const currentProvider = provider;
+        if (currentProvider === 'anthropic' && !getAnthropicKey()) { setError('Enter your Anthropic API key.'); setStep(0); return; }
+        if (currentProvider === 'openai' && !getOpenAIKey()) { setError('Enter your OpenAI API key.'); setStep(0); return; }
+
+        // Step 1: Translate UI texts
+        uiTrans = await translateTexts(form, glossary, baseLang, langsToTranslate);
+
+        // Step 2: Translate About — single call for all target langs
+        setStep(2);
+        const aboutHtmlsByLang = {};
+        for (const lang of langsToTranslate) {
+          aboutHtmlsByLang[lang] = buildAboutHtmlStr(aboutBase, lang);
+        }
+        const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(baseAboutHtml, aboutHtmlsByLang, glossary, baseLang, langsToTranslate);
+        setCacheInfo({ fromCache, textCount });
+
+        aboutByLang = { [baseLang]: baseAboutHtml };
+        for (const lang of langsToTranslate) {
+          aboutByLang[lang] = applyGlossaryPostProcessing(aboutTranslated[lang] || baseAboutHtml, lang, glossary);
+        }
+      } else {
+        // No translation needed
+        setStep(3);
+        aboutByLang = { [baseLang]: baseAboutHtml };
+      }
 
       // Step 3: Build pages
       setStep(3);
-      const enStrings = buildEnStrings(form);
-
+      const baseStrings = buildBaseStrings(form);
       const result = {};
-      for (const { key } of LANGS) {
-        const strings = key === 'en' ? enStrings : { ...enStrings, ...(uiTrans[key] || {}) };
-        result[key] = buildPage(form, key, strings, aboutByLang[key]);
+      for (const lang of targetLangs) {
+        const strings = lang === baseLang ? baseStrings : { ...baseStrings, ...(uiTrans[lang] || {}) };
+        result[lang] = buildPage(form, lang, strings, aboutByLang[lang] || baseAboutHtml, baseLang, targetLangs);
       }
 
-      setCachedTranslations({ uiTrans, aboutByLang, enStrings });
+      setCachedTranslations({ uiTrans, aboutByLang, enStrings: baseStrings });
       setPages(result);
-      setEnOnly(false);
       setIsMono(false);
       setMonoPage(null);
-      setActiveTab('en');
-      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: result, enOnly: false });
+      setActiveTab(baseLang);
+      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: result, baseLang, generatedLangs: targetLangs });
       setStep(4);
     } catch (err) {
       setError(err.message || String(err));
@@ -576,75 +597,52 @@ export default function Builder() {
     }
   }
 
-  function generateEnOnly() {
-    setError('');
-    const enAboutHtml = buildAboutHtmlStr({ ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole }, 'en');
-    const enStrings = {
-      courseLevel:      form.courseLevel,
-      courseTitle:      form.courseTitle,
-      courseSubtitle:   form.courseSubtitle,
-      ctaText:          form.ctaText,
-      freeLessonTitle:  form.freeLessonTitle,
-      beyondSuffix:     'You Also Get',
-      unlimitedTitle:   'Unlimited Access to all Courses',
-      activateSound:    'Activate Sound',
-      freeLessonBtn:    'Free Lesson',
-      coursesLabel:     'Courses',
-      biteLabel:        'Bite-Sized Classes',
-      accessLabel:      'Access',
-      allRightsReserved:'All rights reserved.',
-    };
-    const html = buildPage(form, 'en', enStrings, enAboutHtml);
-    const enPages = { en: html };
-    setPages(enPages);
-    setEnOnly(true);
-    setActiveTab('en');
-    saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: enPages, enOnly: true });
-    setStep(4);
-  }
-
   async function generateMono() {
     setError(''); setMonoPage(null); setPages(null); setIsMono(false);
 
-    let uiTrans, aboutByLang, enStrings;
+    const langsToTranslate = targetLangs.filter(l => l !== baseLang);
+    let uiTrans, aboutByLang, baseStrings_val;
 
     if (cachedTranslations) {
-      ({ uiTrans, aboutByLang, enStrings } = cachedTranslations);
+      ({ uiTrans, aboutByLang, enStrings: baseStrings_val } = cachedTranslations);
     } else {
-      const currentProvider = provider;
-      if (currentProvider === 'anthropic' && !getAnthropicKey()) {
-        setError('Enter your Anthropic API key to generate in 5 languages.');
-        return;
-      }
-      if (currentProvider === 'openai' && !getOpenAIKey()) {
-        setError('Enter your OpenAI API key to generate in 5 languages.');
-        return;
+      if (langsToTranslate.length > 0) {
+        const currentProvider = provider;
+        if (currentProvider === 'anthropic' && !getAnthropicKey()) {
+          setError('Enter your Anthropic API key to generate multilingual page.');
+          return;
+        }
+        if (currentProvider === 'openai' && !getOpenAIKey()) {
+          setError('Enter your OpenAI API key to generate multilingual page.');
+          return;
+        }
       }
 
       setStep(1);
       const glossary = getGlossary();
       try {
-        uiTrans = await translateTexts(form, glossary);
-        setStep(2);
         const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
-        const enAboutHtml = buildAboutHtmlStr(aboutBase, 'en');
-        const aboutHtmlsByLang = {
-          es: buildAboutHtmlStr(aboutBase, 'es'),
-          it: buildAboutHtmlStr(aboutBase, 'it'),
-          fr: buildAboutHtmlStr(aboutBase, 'fr'),
-          de: buildAboutHtmlStr(aboutBase, 'de'),
-        };
-        const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(enAboutHtml, aboutHtmlsByLang, glossary);
-        setCacheInfo({ fromCache, textCount });
-        aboutByLang = {
-          en: enAboutHtml,
-          es: applyGlossaryPostProcessing(aboutTranslated.es, 'es', glossary),
-          it: applyGlossaryPostProcessing(aboutTranslated.it, 'it', glossary),
-          fr: applyGlossaryPostProcessing(aboutTranslated.fr, 'fr', glossary),
-          de: applyGlossaryPostProcessing(aboutTranslated.de, 'de', glossary),
-        };
-        enStrings = buildEnStrings(form);
-        setCachedTranslations({ uiTrans, aboutByLang, enStrings });
+        const baseAboutHtml = buildAboutHtmlStr(aboutBase, baseLang);
+
+        if (langsToTranslate.length > 0) {
+          uiTrans = await translateTexts(form, glossary, baseLang, langsToTranslate);
+          setStep(2);
+          const aboutHtmlsByLang = {};
+          for (const lang of langsToTranslate) {
+            aboutHtmlsByLang[lang] = buildAboutHtmlStr(aboutBase, lang);
+          }
+          const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(baseAboutHtml, aboutHtmlsByLang, glossary, baseLang, langsToTranslate);
+          setCacheInfo({ fromCache, textCount });
+          aboutByLang = { [baseLang]: baseAboutHtml };
+          for (const lang of langsToTranslate) {
+            aboutByLang[lang] = applyGlossaryPostProcessing(aboutTranslated[lang] || baseAboutHtml, lang, glossary);
+          }
+        } else {
+          uiTrans = {};
+          aboutByLang = { [baseLang]: baseAboutHtml };
+        }
+        baseStrings_val = buildBaseStrings(form);
+        setCachedTranslations({ uiTrans, aboutByLang, enStrings: baseStrings_val });
       } catch (err) {
         setError(err.message || String(err));
         setStep(0);
@@ -654,14 +652,14 @@ export default function Builder() {
 
     setStep(3);
     const allStrings = {};
-    for (const { key } of LANGS) {
-      allStrings[key] = key === 'en' ? enStrings : { ...enStrings, ...(uiTrans[key] || {}) };
+    for (const lang of targetLangs) {
+      allStrings[lang] = lang === baseLang ? baseStrings_val : { ...baseStrings_val, ...(uiTrans[lang] || {}) };
     }
 
-    const html = buildMultilingualPage(form, allStrings, aboutByLang);
+    const html = buildMultilingualPage(form, allStrings, aboutByLang, baseLang, targetLangs);
     setMonoPage(html);
     setIsMono(true);
-    saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: { mono: html }, enOnly: false, isMono: true });
+    saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: { mono: html }, isMono: true, baseLang, generatedLangs: targetLangs });
     setStep(4);
   }
 
@@ -680,8 +678,8 @@ export default function Builder() {
   async function downloadZip() {
     const zip = new JSZip();
     const slug = form.pageSlug || 'lp-artista';
-    for (const { key } of LANGS) {
-      zip.file(`${slug}${FILE_SUFFIX[key]}.html`, pages[key]);
+    for (const lang of targetLangs) {
+      if (pages[lang]) zip.file(`${slug}${fileSuffix(lang)}.html`, pages[lang]);
     }
     const blob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(blob);
@@ -691,7 +689,7 @@ export default function Builder() {
 
   function downloadOne(lang) {
     const slug = form.pageSlug || 'lp-artista';
-    const fname = enOnly && lang === 'en' ? `${slug}.html` : `${slug}${FILE_SUFFIX[lang]}.html`;
+    const fname = `${slug}${fileSuffix(lang)}.html`;
     const blob = new Blob([pages[lang]], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = fname; a.click();
@@ -704,9 +702,9 @@ export default function Builder() {
 
   function saveHistory() {
     if (isMono) {
-      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: { mono: monoPage }, enOnly: false, isMono: true });
+      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: { mono: monoPage }, isMono: true, baseLang, generatedLangs: targetLangs });
     } else {
-      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages, enOnly });
+      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages, baseLang, generatedLangs: targetLangs });
     }
     setToast('Saved to history ✓');
   }
@@ -747,6 +745,28 @@ export default function Builder() {
           </button>
         </div>
       )}
+
+      {/* Content language */}
+      <div className="rounded-xl p-5 mb-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <p className="text-xs font-bold uppercase tracking-widest mb-3 text-gray-400">Content Language</p>
+        <p className="text-xs mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>The language you're writing the form in. Other languages will be translated from this.</p>
+        <div className="flex gap-2 flex-wrap">
+          {LANGS.map(({ key, flag, label }) => (
+            <button
+              key={key}
+              onClick={() => setBaseLang(key)}
+              className="h-9 px-3 rounded-lg text-sm font-bold transition-colors"
+              style={{
+                background: baseLang === key ? '#fff' : 'transparent',
+                color: baseLang === key ? '#000' : 'rgba(255,255,255,0.5)',
+                border: baseLang === key ? '1px solid #fff' : '1px solid rgba(255,255,255,0.15)',
+              }}
+            >
+              {flag} {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* API Key Selector */}
       <ApiKeySection
@@ -871,6 +891,36 @@ export default function Builder() {
         />
       </div>
 
+      {/* Generate languages */}
+      <div className="rounded-xl p-5 mb-4" style={{ background: '#111', border: '1px solid #222' }}>
+        <p className="text-xs font-bold uppercase tracking-widest mb-3 text-gray-400">Generate Languages</p>
+        <div className="flex gap-2 flex-wrap">
+          {LANGS.map(({ key, flag, label }) => {
+            const isBase = key === baseLang;
+            const checked = targetLangs.includes(key);
+            return (
+              <button
+                key={key}
+                onClick={() => toggleTargetLang(key)}
+                className="h-9 px-3 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5"
+                style={{
+                  background: checked ? (isBase ? 'rgba(255,200,0,0.12)' : 'rgba(255,255,255,0.1)') : 'transparent',
+                  color: checked ? (isBase ? '#ffd000' : '#fff') : 'rgba(255,255,255,0.3)',
+                  border: checked ? (isBase ? '1px solid rgba(255,200,0,0.35)' : '1px solid rgba(255,255,255,0.25)') : '1px solid rgba(255,255,255,0.1)',
+                  cursor: isBase ? 'default' : 'pointer',
+                }}
+                disabled={isBase}
+              >
+                {flag} {label}{isBase && <span style={{fontSize:9,opacity:0.6}}> base</span>}
+              </button>
+            );
+          })}
+        </div>
+        {targetLangs.length === 1 && (
+          <p className="text-xs mt-2" style={{ color: 'rgba(255,255,255,0.3)' }}>Only base language — no API call needed.</p>
+        )}
+      </div>
+
       {/* Error */}
       {error && (
         <div className="mb-4 rounded-lg px-4 py-3 text-sm font-semibold" style={{ background: 'rgba(255,50,50,0.1)', border: '1px solid rgba(255,50,50,0.25)', color: '#ff6666' }}>
@@ -883,40 +933,28 @@ export default function Builder() {
         <div className="flex gap-3">
           <div className="relative flex-1 group">
             <button
-              onClick={() => {
-                const hasKey = provider === 'anthropic' ? !!getAnthropicKey() : !!getOpenAIKey();
-                if (!hasKey) {
-                  setError(`Enter your ${provider === 'anthropic' ? 'Anthropic' : 'OpenAI'} API key to generate in 5 languages.`);
-                  return;
-                }
-                generate();
-              }}
+              onClick={generate}
               className="w-full h-12 rounded-xl font-black text-base tracking-wide transition-opacity"
               style={{ background: '#fff', color: '#000' }}
               onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
               onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
             >
-              {editingEntry ? '⚡ Regenerate in 5 languages' : '⚡ Generate in 5 languages'}
+              {targetLangs.length === 1
+                ? (editingEntry ? '⚡ Regenerate (no API)' : '⚡ Generate (no API)')
+                : (editingEntry ? `⚡ Regenerate in ${targetLangs.length} languages` : `⚡ Generate in ${targetLangs.length} languages`)}
             </button>
           </div>
-          <button
-            onClick={generateEnOnly}
-            className="h-12 px-5 rounded-xl font-black text-sm tracking-wide transition-opacity whitespace-nowrap"
-            style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = '0.72')}
-            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-          >
-            → English only
-          </button>
-          <button
-            onClick={generateMono}
-            className="h-12 px-5 rounded-xl font-black text-sm tracking-wide transition-opacity whitespace-nowrap"
-            style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = '0.72')}
-            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-          >
-            🌐 Single multilingual file
-          </button>
+          {targetLangs.length > 1 && (
+            <button
+              onClick={generateMono}
+              className="h-12 px-5 rounded-xl font-black text-sm tracking-wide transition-opacity whitespace-nowrap"
+              style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = '0.72')}
+              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+            >
+              🌐 Single multilingual file
+            </button>
+          )}
         </div>
       )}
 
@@ -1000,7 +1038,7 @@ export default function Builder() {
         <div className="mt-8">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <p className="text-sm font-bold text-gray-400">
-              {enOnly ? '✓ English page generated' : '✓ 5 pages generated'}
+              {targetLangs.length === 1 ? '✓ 1 page generated' : `✓ ${targetLangs.length} pages generated`}
             </p>
             <div className="flex gap-2 flex-wrap">
               <button
@@ -1010,13 +1048,13 @@ export default function Builder() {
               >
                 Save to History
               </button>
-              {!enOnly && (
+              {targetLangs.length > 1 && (
                 <button
                   onClick={downloadZip}
                   className="h-8 px-4 rounded-lg text-xs font-bold transition-colors"
                   style={{ background: '#fff', color: '#000' }}
                 >
-                  ⬇ Download all 5 (ZIP)
+                  ⬇ Download all {targetLangs.length} (ZIP)
                 </button>
               )}
               <button
@@ -1030,9 +1068,9 @@ export default function Builder() {
           </div>
 
           {/* Tabs */}
-          {!enOnly && (
+          {targetLangs.length > 1 && (
             <div className="flex gap-1 mb-4" style={{ borderBottom: '1px solid #1a1a1a' }}>
-              {LANGS.map(({ key, label, flag }) => (
+              {LANGS.filter(({ key }) => targetLangs.includes(key)).map(({ key, label, flag }) => (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
@@ -1055,22 +1093,22 @@ export default function Builder() {
             </div>
           )}
 
-          {(enOnly ? [{ key: 'en' }] : LANGS).map(({ key }) => activeTab === key && (
-            <div key={key}>
+          {targetLangs.map(lang => activeTab === lang && (
+            <div key={lang}>
               <div className="flex gap-2 mb-3 flex-wrap">
                 <button
-                  onClick={() => copyOne(key)}
+                  onClick={() => copyOne(lang)}
                   className="h-8 px-3 rounded-lg text-xs font-bold"
                   style={{ background: 'rgba(255,255,255,0.08)', color: '#fff' }}
                 >
                   Copy HTML
                 </button>
                 <button
-                  onClick={() => downloadOne(key)}
+                  onClick={() => downloadOne(lang)}
                   className="h-8 px-3 rounded-lg text-xs font-bold"
                   style={{ background: 'rgba(255,255,255,0.08)', color: '#fff' }}
                 >
-                  ⬇ {enOnly ? `${form.pageSlug || 'lp-artista'}.html` : `${form.pageSlug || 'lp-artista'}${FILE_SUFFIX[key]}.html`}
+                  ⬇ {`${form.pageSlug || 'lp-artista'}${fileSuffix(lang)}.html`}
                 </button>
               </div>
               <textarea
@@ -1084,7 +1122,7 @@ export default function Builder() {
                   lineHeight: 1.6,
                   outline: 'none',
                 }}
-                value={pages[key]}
+                value={pages[lang]}
               />
             </div>
           ))}

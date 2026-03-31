@@ -248,16 +248,36 @@ function buildUnlimitedSection(d) {
 </footer>`;
 }
 
-function buildSelector(slug) {
+const LANG_NAMES = {en:'English', es:'Español', it:'Italiano', fr:'Français', de:'Deutsch'};
+const LANG_FLAGS_HTML = {en:'🇬🇧', es:'🇪🇸', it:'🇮🇹', fr:'🇫🇷', de:'🇩🇪'};
+
+function buildSelector(slug, baseLang, generatedLangs) {
+  if (!generatedLangs || generatedLangs.length <= 1) return '';
+
+  const links = generatedLangs.map(lang => {
+    const url = 'https://academy.ermesdance.com/' + slug + (lang === baseLang ? '' : '-' + lang);
+    return '    <a href="' + url + '" class="lang-link" data-lang="' + lang + '">' + LANG_FLAGS_HTML[lang] + ' ' + LANG_NAMES[lang] + '</a>';
+  }).join('\n');
+
+  const langMapEntries = generatedLangs.map(lang => {
+    const url = 'https://academy.ermesdance.com/' + slug + (lang === baseLang ? '' : '-' + lang);
+    return "'" + lang + "':'" + url + "'";
+  }).join(',');
+
+  const flagMapEntries = generatedLangs.map(lang => "'" + lang + "':'" + LANG_FLAGS_HTML[lang] + "'").join(',');
+
+  const currentLangChecks = generatedLangs
+    .filter(lang => lang !== baseLang)
+    .map(lang => "if(p.endsWith('-" + lang + "'))return '" + lang + "';")
+    .join('');
+
+  const initialFlag = LANG_FLAGS_HTML[baseLang];
+
   return `
 <div id="language-switcher" style="position:fixed;bottom:24px;right:24px;z-index:9999;font-family:'Montserrat',sans-serif;">
-  <div id="lang-btn" style="background:#000;color:#fff;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:all .3s;font-size:28px;" aria-label="Language switcher">\ud83c\uddec\ud83c\udde7</div>
+  <div id="lang-btn" style="background:#000;color:#fff;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:all .3s;font-size:28px;" aria-label="Language switcher">${initialFlag}</div>
   <div id="lang-options" style="position:absolute;bottom:70px;right:0;background:#000;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);opacity:0;visibility:hidden;transform:translateY(10px);transition:all .3s;width:180px;">
-    <a href="https://academy.ermesdance.com/${slug}" class="lang-link" data-lang="en">\ud83c\uddec\ud83c\udde7 English</a>
-    <a href="https://academy.ermesdance.com/${slug}-es" class="lang-link" data-lang="es">\ud83c\uddea\ud83c\uddf8 Espa\xf1ol</a>
-    <a href="https://academy.ermesdance.com/${slug}-it" class="lang-link" data-lang="it">\ud83c\uddee\ud83c\uddf9 Italiano</a>
-    <a href="https://academy.ermesdance.com/${slug}-fr" class="lang-link" data-lang="fr">\ud83c\uddeb\ud83c\uddf7 Fran\xe7ais</a>
-    <a href="https://academy.ermesdance.com/${slug}-de" class="lang-link" data-lang="de">\ud83c\udde9\ud83c\uddea Deutsch</a>
+${links}
   </div>
 </div>
 <style>
@@ -268,15 +288,15 @@ function buildSelector(slug) {
 <script>
 (function(){
   var btn=document.getElementById('lang-btn'),options=document.getElementById('lang-options');
-  var langMap={en:'https://academy.ermesdance.com/${slug}',es:'https://academy.ermesdance.com/${slug}-es',it:'https://academy.ermesdance.com/${slug}-it',fr:'https://academy.ermesdance.com/${slug}-fr',de:'https://academy.ermesdance.com/${slug}-de'};
-  var flagMap={en:'\ud83c\uddec\ud83c\udde7',es:'\ud83c\uddea\ud83c\uddf8',fr:'\ud83c\uddeb\ud83c\uddf7',it:'\ud83c\uddee\ud83c\uddf9',de:'\ud83c\udde9\ud83c\uddea'};
-  function currentLang(){var p=(window.location.pathname||'').toLowerCase().replace(/\\/+$/,'');if(p.endsWith('-es'))return 'es';if(p.endsWith('-fr'))return 'fr';if(p.endsWith('-it'))return 'it';if(p.endsWith('-de'))return 'de';return 'en';}
-  btn.innerHTML=flagMap[currentLang()]||flagMap.en;
-  var ul=(navigator.language||'en').toLowerCase().split('-')[0],pref=localStorage.getItem('forced-lang');
+  var langMap={${langMapEntries}};
+  var flagMap={${flagMapEntries}};
+  function currentLang(){var p=(window.location.pathname||'').toLowerCase().replace(/\\/+$/,'');${currentLangChecks}return '${baseLang}';}
+  btn.innerHTML=flagMap[currentLang()]||flagMap['${baseLang}'];
+  var ul=(navigator.language||'${baseLang}').toLowerCase().split('-')[0],pref=localStorage.getItem('forced-lang');
   var curPath=(window.location.pathname||'').toLowerCase().replace(/\\/+$/,'');
-  if(curPath==='/${slug}'&&!pref&&langMap[ul]&&ul!=='en'){window.location.replace(langMap[ul]);return;}
+  if(curPath==='/${slug}'&&!pref&&langMap[ul]&&ul!=='${baseLang}'){window.location.replace(langMap[ul]);return;}
   btn.addEventListener('click',function(e){e.stopPropagation();var o=options.style.opacity==='1';options.style.opacity=o?'0':'1';options.style.visibility=o?'hidden':'visible';options.style.transform=o?'translateY(10px)':'translateY(0)';});
-  document.querySelectorAll('.lang-link').forEach(function(l){l.addEventListener('click',function(){localStorage.setItem('forced-lang',(l.dataset.lang||'en').toLowerCase());});});
+  document.querySelectorAll('.lang-link').forEach(function(l){l.addEventListener('click',function(){localStorage.setItem('forced-lang',(l.dataset.lang||'${baseLang}').toLowerCase());});});
   document.addEventListener('click',function(){options.style.opacity='0';options.style.visibility='hidden';options.style.transform='translateY(10px)';});
 })();
 <\/script>`;
@@ -455,7 +475,7 @@ ${accordionItems}
 <\/script>`;
 }
 
-export function buildPage(form, lang, strings, translatedAboutHtml) {
+export function buildPage(form, lang, strings, translatedAboutHtml, baseLang = 'en', generatedLangs = null) {
   // strings = { courseLevel, courseTitle, courseSubtitle, ctaText, freeLessonTitle, beyondSuffix, unlimitedTitle, ... }
 
   // Resolve video IDs — new model (heroVideoIds/freeLessonVideoIds) with fallback to old (wistiaVideos)
@@ -486,7 +506,7 @@ export function buildPage(form, lang, strings, translatedAboutHtml) {
     allRightsReserved: strings.allRightsReserved || 'All rights reserved.',
   };
 
-  const slug = (form.pageSlug || 'lp-artista') + (lang === 'en' ? '' : '-' + lang);
+  const slug = (form.pageSlug || 'lp-artista') + (lang === baseLang ? '' : '-' + lang);
   const baseSlug = form.pageSlug || 'lp-artista';
 
   const html = `<!DOCTYPE html>
@@ -516,7 +536,7 @@ ${buildHeroSection(d)}
 ${translatedAboutHtml}
 ${buildBeyondSection(d)}
 ${buildUnlimitedSection(d)}
-${buildSelector(baseSlug)}
+${buildSelector(baseSlug, baseLang, generatedLangs && generatedLangs.length > 1 ? generatedLangs : [])}
 <script>
 (function(){
   var el = document.querySelector('.hero-section');
@@ -654,16 +674,16 @@ function buildBeyondBlock(d) {
   return buildBeyondSection(d).replace(/<style[\s\S]*?<\/style>/gi, '');
 }
 
-function buildMLSelector() {
+function buildMLSelector(generatedLangs) {
+  const links = generatedLangs.map(lang =>
+    '    <a class="lang-link" onclick="showLang(\'' + lang + '\')" style="cursor:pointer;">' + LANG_FLAGS_HTML[lang] + ' ' + LANG_NAMES[lang] + '</a>'
+  ).join('\n');
+
   return `
 <div id="language-switcher" style="position:fixed;bottom:24px;right:24px;z-index:9999;font-family:'Montserrat',sans-serif;">
-  <div id="lang-btn" style="background:#000;color:#fff;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:all .3s;font-size:28px;" aria-label="Language switcher">\ud83c\uddec\ud83c\udde7</div>
+  <div id="lang-btn" style="background:#000;color:#fff;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:all .3s;font-size:28px;" aria-label="Language switcher">${LANG_FLAGS_HTML[generatedLangs[0]] || '🌐'}</div>
   <div id="lang-options" style="position:absolute;bottom:70px;right:0;background:#000;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);opacity:0;visibility:hidden;transform:translateY(10px);transition:all .3s;width:180px;">
-    <a class="lang-link" onclick="showLang('en')" style="cursor:pointer;">\ud83c\uddec\ud83c\udde7 English</a>
-    <a class="lang-link" onclick="showLang('es')" style="cursor:pointer;">\ud83c\uddea\ud83c\uddf8 Espa\xf1ol</a>
-    <a class="lang-link" onclick="showLang('it')" style="cursor:pointer;">\ud83c\uddee\ud83c\uddf9 Italiano</a>
-    <a class="lang-link" onclick="showLang('fr')" style="cursor:pointer;">\ud83c\uddeb\ud83c\uddf7 Fran\xe7ais</a>
-    <a class="lang-link" onclick="showLang('de')" style="cursor:pointer;">\ud83c\udde9\ud83c\uddea Deutsch</a>
+${links}
   </div>
 </div>
 <style>
@@ -673,34 +693,38 @@ function buildMLSelector() {
 </style>`;
 }
 
-function buildMLScript(dByLang) {
-  const heroApiInits = ML_LANGS.map(lang => {
+function buildMLScript(dByLang, baseLang, generatedLangs) {
+  const heroApiInits = generatedLangs.map(lang => {
     const vid = dByLang[lang].heroVideoId || '';
     if (!vid) return '';
     return `window._wq.push({id:'${vid}',options:{autoPlay:true,muted:true,playerColor:'000000',endVideoBehavior:'loop'},onReady:function(v){if(v.container&&!v.container.closest('#heroVideoModal'))_heroApis['${lang}']=v;}});`;
   }).filter(Boolean).join('\n  ');
 
-  const soundBtnInits = ML_LANGS.map(lang =>
+  const soundBtnInits = generatedLangs.map(lang =>
     `(function(){var sb=document.getElementById('activateSoundBtn-${lang}');if(sb)sb.addEventListener('click',function(){var a=_heroApis['${lang}'];if(a){a.time(0);a.unmute();a.volume(1);a.play();}sb.classList.add('is-hidden');});})();`
   ).join('\n  ');
+
+  const flagsObj = '{' + generatedLangs.map(lang => "'" + lang + "':'" + LANG_FLAGS_HTML[lang] + "'").join(',') + '}';
+  const supportedJson = JSON.stringify(generatedLangs);
+  const fallbackLang = generatedLangs[0];
 
   return `<script>
 (function(){
   /* ─ Language switching ─ */
-  var _flags={en:'\ud83c\uddec\ud83c\udde7',es:'\ud83c\uddea\ud83c\uddf8',it:'\ud83c\uddee\ud83c\uddf9',fr:'\ud83c\uddeb\ud83c\uddf7',de:'\ud83c\udde9\ud83c\uddea'};
-  var _supported=['en','es','it','fr','de'];
+  var _flags=${flagsObj};
+  var _supported=${supportedJson};
   function showLang(code){
     document.querySelectorAll('.lang-block').forEach(function(el){el.hidden=(el.dataset.lang!==code);});
     var lb=document.getElementById('lang-btn');
-    if(lb)lb.innerHTML=_flags[code]||_flags.en;
+    if(lb)lb.innerHTML=_flags[code]||_flags['${fallbackLang}'];
     localStorage.setItem('forced-lang',code);
     var lo=document.getElementById('lang-options');
     if(lo){lo.style.opacity='0';lo.style.visibility='hidden';lo.style.transform='translateY(10px)';}
   }
   window.showLang=showLang;
   var _forced=localStorage.getItem('forced-lang');
-  var _nav=(navigator.language||'en').toLowerCase().split('-')[0];
-  var _lang=_forced&&_supported.indexOf(_forced)>-1?_forced:(_supported.indexOf(_nav)>-1?_nav:'en');
+  var _nav=(navigator.language||'${baseLang}').toLowerCase().split('-')[0];
+  var _lang=_forced&&_supported.indexOf(_forced)>-1?_forced:(_supported.indexOf(_nav)>-1?_nav:'${fallbackLang}');
   showLang(_lang);
   var _lb=document.getElementById('lang-btn'),_lo=document.getElementById('lang-options');
   if(_lb&&_lo){
@@ -750,13 +774,13 @@ function buildMLScript(dByLang) {
 <\/script>`;
 }
 
-export function buildMultilingualPage(form, allStrings, allAboutHtmls) {
+export function buildMultilingualPage(form, allStrings, allAboutHtmls, baseLang = 'en', generatedLangs = ML_LANGS) {
   const dByLang = {};
-  for (const lang of ML_LANGS) {
+  for (const lang of generatedLangs) {
     dByLang[lang] = buildD_ml(form, lang, allStrings[lang]);
   }
 
-  const courseTitle = (allStrings.en && allStrings.en.courseTitle) || form.courseTitle || 'Course';
+  const courseTitle = (allStrings[baseLang] && allStrings[baseLang].courseTitle) || form.courseTitle || 'Course';
 
   // ── Build each piece separately (string concat, no giant template literal) ──
 
@@ -764,16 +788,16 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls) {
     return '<div data-lang="' + lang + '" class="lang-block"' + (first ? '' : ' hidden') + '>' + content + '</div>';
   }
 
-  // Shared CSS from EN sections (goes once in <head>)
+  // Shared CSS from base lang sections (goes once in <head>)
   const allCss = [
-    extractStyleBlocks(buildHeroSection(dByLang.en)),
-    extractStyleBlocks(allAboutHtmls.en),
-    extractStyleBlocks(buildBeyondSection(dByLang.en)),
-    extractStyleBlocks(buildUnlimitedSection(dByLang.en)),
+    extractStyleBlocks(buildHeroSection(dByLang[baseLang])),
+    extractStyleBlocks(allAboutHtmls[baseLang]),
+    extractStyleBlocks(buildBeyondSection(dByLang[baseLang])),
+    extractStyleBlocks(buildUnlimitedSection(dByLang[baseLang])),
   ].join('\n');
 
   // <head>
-  const head = '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
+  const head = '<!DOCTYPE html>\n<html lang="' + baseLang + '">\n<head>\n' +
     '<meta charset="UTF-8">\n' +
     '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
     '<title>' + courseTitle + ' | Ermes Dance Academy</title>\n' +
@@ -800,16 +824,16 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls) {
     '</header>\n';
 
   // Hero lang-blocks
-  const heroBlocks = ML_LANGS.map((lang, i) => lb(lang, buildHeroBlock(dByLang[lang], lang), i === 0)).join('\n');
+  const heroBlocks = generatedLangs.map((lang, i) => lb(lang, buildHeroBlock(dByLang[lang], lang), i === 0)).join('\n');
 
   // About lang-blocks
-  const aboutBlocks = ML_LANGS.map((lang, i) => lb(lang, buildAboutBlock(allAboutHtmls[lang]), i === 0)).join('\n');
+  const aboutBlocks = generatedLangs.map((lang, i) => lb(lang, buildAboutBlock(allAboutHtmls[lang]), i === 0)).join('\n');
 
   // Beyond lang-blocks
-  const beyondBlocks = ML_LANGS.map((lang, i) => lb(lang, buildBeyondBlock(dByLang[lang]), i === 0)).join('\n');
+  const beyondBlocks = generatedLangs.map((lang, i) => lb(lang, buildBeyondBlock(dByLang[lang]), i === 0)).join('\n');
 
   // Unlimited: header in lang-blocks, marquee images once
-  const unlimitedHeaders = ML_LANGS.map((lang, i) => {
+  const unlimitedHeaders = generatedLangs.map((lang, i) => {
     const d = dByLang[lang];
     const hdr = '<div class="ed-uac__header">' +
       '<h2 class="ed-uac__title">' + (d.unlimitedTitle || 'Unlimited Access to all Courses') + '</h2>' +
@@ -836,7 +860,7 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls) {
     '</section>\n';
 
   // Footer lang-blocks
-  const footerBlocks = ML_LANGS.map((lang, i) => {
+  const footerBlocks = generatedLangs.map((lang, i) => {
     const d = dByLang[lang];
     const foot =
       '<footer class="ed-footer" role="contentinfo">\n' +
@@ -880,8 +904,8 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls) {
     + beyondBlocks + '\n'
     + unlimited
     + footerBlocks + '\n'
-    + buildMLSelector() + '\n'
-    + buildMLScript(dByLang) + '\n'
+    + buildMLSelector(generatedLangs) + '\n'
+    + buildMLScript(dByLang, baseLang, generatedLangs) + '\n'
     + parentOverride
     + '</body>\n</html>';
 

@@ -155,12 +155,20 @@ function applyTranslations(html, sourceTexts, translatedTexts) {
   return result;
 }
 
+const LANG_NAMES_API = {en:'English', es:'Spanish (es)', it:'Italian (it)', fr:'French (fr)', de:'German (de)'};
+
 // ── Public API functions ─────────────────────────────────────
-export async function translateTexts(formFields, glossary) {
+export async function translateTexts(formFields, glossary, sourceLang = 'en', targetLangs = ['es','it','fr','de']) {
+  if (targetLangs.length === 0) return {};
+
+  const sourceLangName = LANG_NAMES_API[sourceLang] || sourceLang;
+  const targetLangsStr = targetLangs.map(l => LANG_NAMES_API[l] || l).join(', ');
+  const structureStr = '{' + targetLangs.map(l => '"' + l + '":{...}').join(',') + '}';
+
   const prompt = `You are a professional translator for a dance academy.
-Translate the following fields to Spanish (es), Italian (it), French (fr), and German (de).
+Translate the following fields from ${sourceLangName} to ${targetLangsStr}.
 Return ONLY valid JSON — no markdown, no code fences.
-Structure: {"es":{...},"it":{...},"fr":{...},"de":{...}}
+Structure: ${structureStr}
 Each object must have exactly these keys: courseLevel, courseTitle, courseSubtitle, ctaText, freeLessonTitle, beyondSuffix, unlimitedTitle.
 
 MANDATORY GLOSSARY — use these exact translations, never paraphrase:
@@ -168,7 +176,7 @@ ${glossaryTable(glossary)}
 
 Do NOT translate: artist names, "Ermes Dance Academy", "Motion Bites®".
 
-Source (EN):
+Source (${sourceLangName}):
 courseLevel: ${formFields.courseLevel}
 courseTitle: ${formFields.courseTitle}
 courseSubtitle: ${formFields.courseSubtitle}
@@ -182,11 +190,13 @@ unlimitedTitle: Unlimited Access to all Courses`;
   return JSON.parse(clean);
 }
 
-// Single API call → all 4 languages, with localStorage cache
-export async function translateAboutHtmlAllLangs(enHtml, aboutHtmlsByLang, glossary) {
-  const sourceTexts = extractTextsFromHtml(enHtml);
+// Single API call → all target languages, with localStorage cache
+export async function translateAboutHtmlAllLangs(baseHtml, aboutHtmlsByLang, glossary, sourceLang = 'en', targetLangs = ['es','it','fr','de']) {
+  if (targetLangs.length === 0) return { result: {}, fromCache: false, textCount: 0 };
+
+  const sourceTexts = extractTextsFromHtml(baseHtml);
   const textCount = Object.keys(sourceTexts).length;
-  const cacheKey = hashStr(JSON.stringify(sourceTexts));
+  const cacheKey = hashStr(JSON.stringify(sourceTexts) + sourceLang + targetLangs.join(','));
 
   // Check cache
   const cache = getTranslationCache();
@@ -194,7 +204,7 @@ export async function translateAboutHtmlAllLangs(enHtml, aboutHtmlsByLang, gloss
     console.log('[cache] Hit! key=' + cacheKey + ', ' + textCount + ' strings');
     const cachedTranslatedTexts = cache[cacheKey];
     const result = {};
-    for (const lang of ['es', 'it', 'fr', 'de']) {
+    for (const lang of targetLangs) {
       const langTexts = {};
       for (const key of Object.keys(cachedTranslatedTexts)) {
         langTexts[key] = cachedTranslatedTexts[key]?.[lang] || sourceTexts[key];
@@ -204,10 +214,14 @@ export async function translateAboutHtmlAllLangs(enHtml, aboutHtmlsByLang, gloss
     return { result, fromCache: true, textCount };
   }
 
-  console.log('[api] translateAboutHtmlAllLangs: ' + textCount + ' strings, 4 langs, single call');
-  const prompt = `Translate the following text strings to Spanish (es), Italian (it), French (fr), and German (de).
+  const sourceLangName = LANG_NAMES_API[sourceLang] || sourceLang;
+  const targetLangsStr = targetLangs.map(l => LANG_NAMES_API[l] || l).join(', ');
+  const structureExample = '{"T0":{' + targetLangs.map(l => '"' + l + '":"..."').join(',') + '},"T1":{...},...}';
+
+  console.log('[api] translateAboutHtmlAllLangs: ' + textCount + ' strings, ' + targetLangs.length + ' langs, single call');
+  const prompt = `Translate the following text strings from ${sourceLangName} to ${targetLangsStr}.
 Return ONLY valid JSON — no markdown, no code fences.
-Structure: {"T0":{"es":"...","it":"...","fr":"...","de":"..."},"T1":{...},...}
+Structure: ${structureExample}
 Include ALL keys from the source — every key must appear in the output.
 
 MANDATORY GLOSSARY — use these exact translations, never paraphrase:
@@ -215,10 +229,10 @@ ${glossaryTable(glossary)}
 
 Do NOT translate: artist names, "Ermes Dance Academy", "Motion Bites®".
 
-Source strings (EN):
+Source strings (${sourceLangName}):
 ${JSON.stringify(sourceTexts, null, 2)}`;
 
-  const raw = await callAI(prompt, 6000, true); // Haiku: single call instead of 4
+  const raw = await callAI(prompt, 6000, true); // Haiku: single call instead of N
   const clean = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/, '');
   const translatedTexts = JSON.parse(clean);
 
@@ -228,7 +242,7 @@ ${JSON.stringify(sourceTexts, null, 2)}`;
 
   // Build translated HTML for each lang
   const result = {};
-  for (const lang of ['es', 'it', 'fr', 'de']) {
+  for (const lang of targetLangs) {
     const langTexts = {};
     for (const key of Object.keys(translatedTexts)) {
       langTexts[key] = translatedTexts[key]?.[lang] || sourceTexts[key];

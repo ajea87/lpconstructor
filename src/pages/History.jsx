@@ -5,7 +5,6 @@ import JSZip from 'jszip';
 
 const LANGS = ['en', 'es', 'it', 'fr', 'de'];
 const FLAG = { en: '🇬🇧', es: '🇪🇸', it: '🇮🇹', fr: '🇫🇷', de: '🇩🇪' };
-const FILE_SUFFIX = { en: '', es: '-es', it: '-it', fr: '-fr', de: '-de' };
 
 function formatDate(iso) {
   try {
@@ -68,10 +67,12 @@ export default function History() {
       console.log('[History] Adding mono file:', slug + '.html');
     } else {
       // 5-lang or en-only
+      const entryBaseLang = entry.baseLang || 'en';
       LANGS.forEach(lang => {
         const html = pages[lang];
         if (html && html.length > 100) {
-          zip.file(slug + FILE_SUFFIX[lang] + '.html', html);
+          const suffix = lang === entryBaseLang ? '' : '-' + lang;
+          zip.file(slug + suffix + '.html', html);
           console.log('[History] Adding', lang + ':', html.length, 'chars');
         } else {
           console.warn('[History] Skipping lang=' + lang + ', html length:', html?.length ?? 0);
@@ -100,7 +101,9 @@ export default function History() {
     const slug = entry.pageSlug || 'lp-artista';
     const html = entry.pages?.[lang] || '';
     console.log('[History] downloadOne lang=' + lang + ':', html.length, 'chars');
-    const fname = entry.enOnly && lang === 'en' ? slug + '.html' : slug + FILE_SUFFIX[lang] + '.html';
+    const entryBaseLang = entry.baseLang || (entry.enOnly ? 'en' : 'en');
+    const suffix = lang === entryBaseLang ? '' : '-' + lang;
+    const fname = slug + suffix + '.html';
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = fname; a.click();
