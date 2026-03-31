@@ -539,7 +539,16 @@ export default function Builder() {
   async function generate() {
     const langsToTranslate = targetLangs.filter(l => l !== baseLang);
 
-    setError(''); setStep(1); setPages(null); setMonoPage(null); setIsMono(false);
+    // API key guard — only needed when there are langs to translate
+    if (langsToTranslate.length > 0) {
+      const currentProvider = provider;
+      if (currentProvider === 'anthropic' && !getAnthropicKey()) { setError('Enter your Anthropic API key.'); return; }
+      if (currentProvider === 'openai' && !getOpenAIKey()) { setError('Enter your OpenAI API key.'); return; }
+    }
+
+    setError('');
+    setStep(langsToTranslate.length > 0 ? 1 : 3);
+    setPages(null); setMonoPage(null); setIsMono(false);
     const glossary = getGlossary();
 
     try {
@@ -549,10 +558,6 @@ export default function Builder() {
       const baseAboutHtml = buildAboutHtmlStr(aboutBase, baseLang);
 
       if (langsToTranslate.length > 0) {
-        const currentProvider = provider;
-        if (currentProvider === 'anthropic' && !getAnthropicKey()) { setError('Enter your Anthropic API key.'); setStep(0); return; }
-        if (currentProvider === 'openai' && !getOpenAIKey()) { setError('Enter your OpenAI API key.'); setStep(0); return; }
-
         // Step 1: Translate UI texts
         uiTrans = await translateTexts(form, glossary, baseLang, langsToTranslate);
 
@@ -616,9 +621,10 @@ export default function Builder() {
           setError('Enter your OpenAI API key to generate multilingual page.');
           return;
         }
+        setStep(1);
+      } else {
+        setStep(3);
       }
-
-      setStep(1);
       const glossary = getGlossary();
       try {
         const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
