@@ -1,17 +1,10 @@
-const STEPS = [
-  { id: 1, label: 'Translating UI texts', detail: '1 API call' },
-  { id: 2, label: 'Translating About section', detail: '4 parallel API calls' },
-  { id: 3, label: 'Building HTML files', detail: '5 languages' },
-  { id: 4, label: 'Done', detail: '' },
-];
-
-export default function ProgressBar({ currentStep }) {
+export default function ProgressBar({ currentStep, steps }) {
   return (
     <div className="rounded-xl p-6 space-y-3" style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
       <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: 'rgba(255,255,255,0.35)' }}>
         Generating…
       </p>
-      {STEPS.map(step => {
+      {steps.map(step => {
         const done    = currentStep > step.id;
         const active  = currentStep === step.id;
         const pending = currentStep < step.id;
@@ -28,9 +21,7 @@ export default function ProgressBar({ currentStep }) {
               {done ? '✓' : step.id}
             </div>
             <div className="flex-1 min-w-0">
-              <span
-                className={`text-sm font-semibold ${pending ? 'text-gray-500' : 'text-white'}`}
-              >
+              <span className={`text-sm font-semibold ${pending ? 'text-gray-500' : 'text-white'}`}>
                 {step.label}
               </span>
               {step.detail && (

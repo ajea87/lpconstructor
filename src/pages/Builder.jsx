@@ -537,7 +537,11 @@ export default function Builder() {
   }
 
   async function generate() {
-    const langsToTranslate = targetLangs.filter(l => l !== baseLang);
+    const langsToTranslate = targetLangs
+      .map(l => l.toLowerCase())
+      .filter(l => l !== baseLang.toLowerCase());
+
+    console.log('[generate] baseLang:', baseLang, '| targetLangs:', targetLangs, '| langsToTranslate:', langsToTranslate);
 
     // API key guard — only needed when there are langs to translate
     if (langsToTranslate.length > 0) {
@@ -605,7 +609,12 @@ export default function Builder() {
   async function generateMono() {
     setError(''); setMonoPage(null); setPages(null); setIsMono(false);
 
-    const langsToTranslate = targetLangs.filter(l => l !== baseLang);
+    const langsToTranslate = targetLangs
+      .map(l => l.toLowerCase())
+      .filter(l => l !== baseLang.toLowerCase());
+
+    console.log('[generateMono] baseLang:', baseLang, '| targetLangs:', targetLangs, '| langsToTranslate:', langsToTranslate);
+
     let uiTrans, aboutByLang, baseStrings_val;
 
     if (cachedTranslations) {
@@ -726,6 +735,20 @@ export default function Builder() {
   }
 
   const busy = step > 0 && step < 4;
+
+  // Dynamic progress steps — reflect exactly what this run will do
+  const _langsToTranslate = targetLangs.map(l => l.toLowerCase()).filter(l => l !== baseLang.toLowerCase());
+  const progressSteps = _langsToTranslate.length === 0
+    ? [
+        { id: 3, label: 'Building HTML file', detail: `1 language (${baseLang.toUpperCase()})` },
+        { id: 4, label: 'Done', detail: '' },
+      ]
+    : [
+        { id: 1, label: 'Translating UI texts', detail: `1 API call → ${_langsToTranslate.map(l => l.toUpperCase()).join(', ')}` },
+        { id: 2, label: 'Translating About section', detail: `1 API call, ${_langsToTranslate.length} lang${_langsToTranslate.length > 1 ? 's' : ''}` },
+        { id: 3, label: `Building HTML file${targetLangs.length > 1 ? 's' : ''}`, detail: `${targetLangs.length} language${targetLangs.length > 1 ? 's' : ''}` },
+        { id: 4, label: 'Done', detail: '' },
+      ];
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8 pb-20">
@@ -986,7 +1009,7 @@ export default function Builder() {
 
       {/* Progress */}
       {busy && (
-        <ProgressBar currentStep={step} />
+        <ProgressBar currentStep={step} steps={progressSteps} />
       )}
 
       {/* Mono results */}
