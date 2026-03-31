@@ -86,9 +86,9 @@ function buildHeroSection(d) {
       <div class="hero-video" id="heroVideoWrap">
         <script src="https://fast.wistia.com/embed/medias/${heroId}.jsonp" async><\/script>
         <div class="wistia_embed wistia_async_${heroId} videoFoam=true autoPlay=true muted=true playerColor=000000 endVideoBehavior=loop" style="position:absolute;inset:0;width:100%;height:100%;">&nbsp;</div>
-        <button class="sound-btn" id="activateSoundBtn" type="button" aria-label="${d.activateSound || 'Activate Sound'}">
+        <button class="sound-btn" id="activateSoundBtn" type="button" aria-label="${d.activateSound}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-          ${d.activateSound || 'Activate Sound'}
+          ${d.activateSound}
         </button>
       </div>
       <div class="hero-right">
@@ -96,13 +96,13 @@ function buildHeroSection(d) {
         <h1 class="hero-title" style="margin-bottom:10px;">${d.courseTitle}</h1>
         <p class="hero-subtitle" style="font-size:14px;font-weight:700;opacity:.9;margin-bottom:16px;">${d.courseSubtitle}</p>
         <div style="opacity:.78;font-weight:650;font-size:13px;line-height:1.3;margin-top:8px;color:rgba(255,255,255,0.78)!important;">
-          Instructor: ${d.artistName},<br/>${d.artistRole}
+          ${d.instructorLabel} ${d.artistName},<br/>${d.artistRole}
         </div>
         <div class="hero-actions">
           <a class="hero-btn primary" href="${d.ctaUrl}" target="_blank" rel="noopener">${d.ctaText}</a>
           <button class="hero-btn outline" type="button" id="openFreeLesson">
             <span class="play" aria-hidden="true"></span>
-            ${d.freeLessonBtn || 'Free Lesson'}
+            ${d.freeLessonBtn}
           </button>
         </div>
       </div>
@@ -164,22 +164,22 @@ function buildBeyondSection(d) {
   <div class="ed4-wrap">
     <div class="ed4-bonus-head">
       <h2 class="ed4-bonus-title">Beyond ${artistName}'s Courses, ${beyondSuffix}</h2>
-      <div class="ed4-bonus-sub">Everything inside Ermes Dance Academy to keep improving faster</div>
+      <div class="ed4-bonus-sub">${d.beyondSub}</div>
       <div class="ed4-bonus-rule"></div>
     </div>
     <div class="ed4-stats">
-      <div class="ed4-stat"><p class="ed4-stat-number">30+</p><p class="ed4-stat-label">${d.coursesLabel || 'Courses'}</p></div>
-      <div class="ed4-stat"><p class="ed4-stat-number">200+</p><p class="ed4-stat-label">${d.biteLabel || 'Bite-Sized Classes'}</p></div>
-      <div class="ed4-stat"><p class="ed4-stat-number">24/7</p><p class="ed4-stat-label">${d.accessLabel || 'Access'}</p></div>
+      <div class="ed4-stat"><p class="ed4-stat-number">30+</p><p class="ed4-stat-label">${d.stat1}</p></div>
+      <div class="ed4-stat"><p class="ed4-stat-number">200+</p><p class="ed4-stat-label">${d.stat2}</p></div>
+      <div class="ed4-stat"><p class="ed4-stat-number">24/7</p><p class="ed4-stat-label">${d.stat3}</p></div>
     </div>
     <div class="ed4-benefits">
-      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>Full Access to 30+ Courses</h4><p>Salsa, Bachata, Musicality, Expression, Flow &amp; more.</p></div></div>
-      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>Multilingual Subtitles Included</h4><p>English, French, Italian, and German subtitles so you never miss a cue.</p></div></div>
-      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>200+ Bite-Sized Classes</h4><p>Short, clear lessons designed for fast, repeatable learning.</p></div></div>
-      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>Motion Bites\xae \u2014 Science-Based Method</h4><p>Learn faster with short, repeatable sessions built for real progress.</p></div></div>
-      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>Classes for All Levels</h4><p>From complete beginners to intermediate dancers who feel "stuck."</p></div></div>
-      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>Top Instructors With Unique Styles</h4><p>Build confidence, musicality, expression, and natural movement.</p></div></div>
-      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>24/7 Access From Any Device</h4><p>Train anytime on mobile, tablet, or desktop.</p></div></div>
+      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>${d.benefit1Title}</h4><p>${d.benefit1Desc}</p></div></div>
+      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>${d.benefit2Title}</h4></div></div>
+      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>${d.benefit3Title}</h4><p>${d.benefit3Desc}</p></div></div>
+      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>${d.benefit4Title}</h4><p>${d.benefit4Desc}</p></div></div>
+      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>${d.benefit5Title}</h4><p>${d.benefit5Desc}</p></div></div>
+      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>${d.benefit6Title}</h4><p>${d.benefit6Desc}</p></div></div>
+      <div class="ed4-benefit"><span class="ed4-check" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h4>${d.benefit7Title}</h4><p>${d.benefit7Desc}</p></div></div>
     </div>
   </div>
 </section>`;
@@ -228,7 +228,7 @@ function buildUnlimitedSection(d) {
   <div class="ed-uac__sidefade right" aria-hidden="true"></div>
   <div class="ed-uac__overlay" aria-hidden="true"></div>
   <div class="ed-uac__header">
-    <h2 class="ed-uac__title">${d.unlimitedTitle || 'Unlimited Access to all Courses'}</h2>
+    <h2 class="ed-uac__title">${d.unlimitedTitle}</h2>
     <a class="ed-uac__btn" href="${d.ctaUrl}" target="_blank" rel="noopener">${d.ctaText}</a>
   </div>
   <div class="ed-uac__rows" aria-label="Course covers marquee">
@@ -243,13 +243,51 @@ function buildUnlimitedSection(d) {
     <div class="ed-footer__logo" aria-hidden="true">
       <img src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2164751305/settings_images/a873d5-a7a4-e2ba-0222-2a6224428c21_2946885f-ffea-485a-9de3-55c9ebec76f1.png" alt="" loading="lazy"/>
     </div>
-    <div class="ed-footer__text">\xa9 2026 Ermes Dance Academy. ${d.allRightsReserved || 'All rights reserved.'}</div>
+    <div class="ed-footer__text">\xa9 2026 Ermes Dance Academy. ${d.footerText}</div>
   </div>
 </footer>`;
 }
 
 const LANG_NAMES = {en:'English', es:'Español', it:'Italiano', fr:'Français', de:'Deutsch'};
 const LANG_FLAGS_HTML = {en:'🇬🇧', es:'🇪🇸', it:'🇮🇹', fr:'🇫🇷', de:'🇩🇪'};
+
+function getTemplateStrings(lang, glossary) {
+  function t(enTerm) {
+    if (lang === 'en') return enTerm;
+    const entry = (glossary || []).find(g => g.en.toLowerCase() === enTerm.toLowerCase());
+    return entry?.[lang] || enTerm;
+  }
+  return {
+    activateSound:  t('Activate Sound'),
+    freeLessonBtn:  t('Free Lesson'),
+    freeLessonLabel: t('Free lesson'),
+    aboutTitle:     t('About these courses'),
+    coursesTitle:   t('Courses'),
+    instructorLabel: t('Instructor:'),
+    lessonsLabel:   t('Lessons:'),
+    categoryLabel:  t('Category:'),
+    allLevels:      t('All levels'),
+    beyondSub:      t('Everything inside Ermes Dance Academy to keep improving faster'),
+    stat1:          t('Courses'),
+    stat2:          t('Bite-Sized Classes'),
+    stat3:          t('Access'),
+    benefit1Title:  t('Full Access to 30+ Courses'),
+    benefit1Desc:   t('Salsa, Bachata, Musicality, Expression, Flow & more.'),
+    benefit2Title:  t('Multilingual Subtitles Included'),
+    benefit3Title:  t('200+ Bite-Sized Classes'),
+    benefit3Desc:   t('Short, clear lessons designed for fast, repeatable learning.'),
+    benefit4Title:  t('Motion Bites® — Science-Based Method'),
+    benefit4Desc:   t('Learn faster with short, repeatable sessions built for real progress.'),
+    benefit5Title:  t('Classes for All Levels'),
+    benefit5Desc:   t('From complete beginners to intermediate dancers who feel "stuck."'),
+    benefit6Title:  t('Top Instructors With Unique Styles'),
+    benefit6Desc:   t('Build confidence, musicality, expression, and natural movement.'),
+    benefit7Title:  t('24/7 Access From Any Device'),
+    benefit7Desc:   t('Train anytime on mobile, tablet, or desktop.'),
+    unlimitedTitle: t('Unlimited Access to all Courses'),
+    footerText:     t('All rights reserved.'),
+  };
+}
 
 function buildSelector(slug, baseLang, generatedLangs) {
   if (!generatedLangs || generatedLangs.length <= 1) return '';
@@ -302,7 +340,8 @@ ${links}
 <\/script>`;
 }
 
-export function buildAboutHtmlStr(aboutData, lang = 'en') {
+export function buildAboutHtmlStr(aboutData, lang = 'en', glossary = []) {
+  const tpl = getTemplateStrings(lang, glossary);
   const {
     introText = '',
     totalLessons = '',
@@ -329,7 +368,7 @@ export function buildAboutHtmlStr(aboutData, lang = 'en') {
         ? (lesson.wistiaIds[lang] || lesson.wistiaIds.en || '')
         : (lesson.wistiaId || '');
       const freeBtn = resolvedWistiaId
-        ? `\n              <button class="ed4-free" type="button" data-wistia="${resolvedWistiaId}" data-title="${lesson.title} (FREE LESSON)">\n                <span class="ed4-play" aria-hidden="true">▶</span> Free lesson\n              </button>`
+        ? `\n              <button class="ed4-free" type="button" data-wistia="${resolvedWistiaId}" data-title="${lesson.title}">\n                <span class="ed4-play" aria-hidden="true">▶</span> ${tpl.freeLessonLabel}\n              </button>`
         : '';
       return `
             <div class="ed4-lesson">
@@ -340,7 +379,7 @@ export function buildAboutHtmlStr(aboutData, lang = 'en') {
             </div>`;
     }).join('');
 
-    const titleWithMeta = `${course.title} | ${instructorName || 'Instructor'} | ${course.level || 'All levels'}`;
+    const titleWithMeta = `${course.title} | ${instructorName || 'Instructor'} | ${course.level || tpl.allLevels}`;
 
     return `
         <div class="ed4-item">
@@ -413,18 +452,18 @@ export function buildAboutHtmlStr(aboutData, lang = 'en') {
 <section class="ed4-section">
   <div class="ed4-wrap">
     <div class="ed4-about">
-      <h2>About these courses</h2>
+      <h2>${tpl.aboutTitle}</h2>
       <div class="ed4-rule"></div>
 ${paragraphs}
       <div class="ed4-meta">
-        Instructor: <b>${instructorName}</b><br/>
-        Lessons: <b>${totalLessons}</b><br/>
-        Category: <b>${category}</b><br/>
+        ${tpl.instructorLabel} <b>${instructorName}</b><br/>
+        ${tpl.lessonsLabel} <b>${totalLessons}</b><br/>
+        ${tpl.categoryLabel} <b>${category}</b><br/>
       </div>
     </div>
 
     <div class="ed4-lessons">
-      <h3>Courses</h3>
+      <h3>${tpl.coursesTitle}</h3>
       <div class="rule"></div>
       <div class="ed4-acc" id="ed4AccordionCourses">
 ${accordionItems}
@@ -443,7 +482,7 @@ ${accordionItems}
 <div class="ed4-modal" id="ed4VideoModal" aria-hidden="true">
   <div class="ed4-modal-card" role="dialog" aria-modal="true">
     <div class="ed4-modal-top">
-      <div class="ed4-modal-title" id="ed4VideoTitle">Free lesson</div>
+      <div class="ed4-modal-title" id="ed4VideoTitle">${tpl.freeLessonLabel}</div>
       <button class="ed4-close" type="button" id="ed4VideoClose" aria-label="Close">×</button>
     </div>
     <div class="ed4-wistia-wrap" id="ed4WistiaWrap"></div>
@@ -475,7 +514,7 @@ ${accordionItems}
 <\/script>`;
 }
 
-export function buildPage(form, lang, strings, translatedAboutHtml, baseLang = 'en', generatedLangs = null) {
+export function buildPage(form, lang, strings, translatedAboutHtml, baseLang = 'en', generatedLangs = null, glossary = []) {
   // strings = { courseLevel, courseTitle, courseSubtitle, ctaText, freeLessonTitle, beyondSuffix, unlimitedTitle, ... }
 
   // Resolve video IDs — new model (heroVideoIds/freeLessonVideoIds) with fallback to old (wistiaVideos)
@@ -491,19 +530,15 @@ export function buildPage(form, lang, strings, translatedAboutHtml, baseLang = '
     freeLessonVideoId = langV.freeLessonVideoId || enV.freeLessonVideoId || '';
   }
 
+  const tpl = getTemplateStrings(lang, glossary);
   const d = {
+    ...tpl,
     ...strings,
     artistName: form.artistName || '',
     artistRole: form.artistRole || '',
     ctaUrl: (form.ctaUrls ? (form.ctaUrls[lang] || form.ctaUrls.en || '#') : (form.ctaUrl || '#')),
     heroVideoId,
     freeLessonVideoId,
-    activateSound: strings.activateSound || 'Activate Sound',
-    freeLessonBtn: strings.freeLessonBtn || 'Free Lesson',
-    coursesLabel: strings.coursesLabel || 'Courses',
-    biteLabel: strings.biteLabel || 'Bite-Sized Classes',
-    accessLabel: strings.accessLabel || 'Access',
-    allRightsReserved: strings.allRightsReserved || 'All rights reserved.',
   };
 
   const slug = (form.pageSlug || 'lp-artista') + (lang === baseLang ? '' : '-' + lang);
@@ -569,7 +604,7 @@ ${buildSelector(baseSlug, baseLang, generatedLangs && generatedLangs.length > 1 
 
 const ML_LANGS = ['en', 'es', 'it', 'fr', 'de'];
 
-function buildD_ml(form, lang, strings) {
+function buildD_ml(form, lang, strings, glossary = []) {
   let heroVideoId, freeLessonVideoId;
   if (form.heroVideoIds) {
     heroVideoId = form.heroVideoIds[lang] || form.heroVideoIds.en || '';
@@ -581,19 +616,15 @@ function buildD_ml(form, lang, strings) {
     heroVideoId = langV.heroVideoId || enV.heroVideoId || '';
     freeLessonVideoId = langV.freeLessonVideoId || enV.freeLessonVideoId || '';
   }
+  const tpl = getTemplateStrings(lang, glossary);
   return {
+    ...tpl,
     ...strings,
     artistName: form.artistName || '',
     artistRole: form.artistRole || '',
     ctaUrl: form.ctaUrls ? (form.ctaUrls[lang] || form.ctaUrls.en || '#') : (form.ctaUrl || '#'),
     heroVideoId,
     freeLessonVideoId,
-    activateSound: strings.activateSound || 'Activate Sound',
-    freeLessonBtn: strings.freeLessonBtn || 'Free Lesson',
-    coursesLabel: strings.coursesLabel || 'Courses',
-    biteLabel: strings.biteLabel || 'Bite-Sized Classes',
-    accessLabel: strings.accessLabel || 'Access',
-    allRightsReserved: strings.allRightsReserved || 'All rights reserved.',
   };
 }
 
@@ -623,7 +654,7 @@ function buildHeroBlock(d, lang) {
         <h1 class="hero-title" style="margin-bottom:10px;">${d.courseTitle}</h1>
         <p class="hero-subtitle" style="font-size:14px;font-weight:700;opacity:.9;margin-bottom:16px;">${d.courseSubtitle}</p>
         <div style="opacity:.78;font-weight:650;font-size:13px;line-height:1.3;margin-top:8px;color:rgba(255,255,255,0.78)!important;">
-          Instructor: ${d.artistName},<br/>${d.artistRole}
+          ${d.instructorLabel} ${d.artistName},<br/>${d.artistRole}
         </div>
         <div class="hero-actions">
           <a class="hero-btn primary" href="${d.ctaUrl}" target="_blank" rel="noopener">${d.ctaText}</a>
@@ -774,10 +805,10 @@ function buildMLScript(dByLang, baseLang, generatedLangs) {
 <\/script>`;
 }
 
-export function buildMultilingualPage(form, allStrings, allAboutHtmls, baseLang = 'en', generatedLangs = ML_LANGS) {
+export function buildMultilingualPage(form, allStrings, allAboutHtmls, baseLang = 'en', generatedLangs = ML_LANGS, glossary = []) {
   const dByLang = {};
   for (const lang of generatedLangs) {
-    dByLang[lang] = buildD_ml(form, lang, allStrings[lang]);
+    dByLang[lang] = buildD_ml(form, lang, allStrings[lang], glossary);
   }
 
   const courseTitle = (allStrings[baseLang] && allStrings[baseLang].courseTitle) || form.courseTitle || 'Course';
@@ -836,7 +867,7 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls, baseLang 
   const unlimitedHeaders = generatedLangs.map((lang, i) => {
     const d = dByLang[lang];
     const hdr = '<div class="ed-uac__header">' +
-      '<h2 class="ed-uac__title">' + (d.unlimitedTitle || 'Unlimited Access to all Courses') + '</h2>' +
+      '<h2 class="ed-uac__title">' + d.unlimitedTitle + '</h2>' +
       '<a class="ed-uac__btn" href="' + d.ctaUrl + '" target="_blank" rel="noopener">' + d.ctaText + '</a>' +
       '</div>';
     return lb(lang, hdr, i === 0);

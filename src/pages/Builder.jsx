@@ -548,11 +548,12 @@ export default function Builder() {
     // ── DEFINITIVE GUARD: single-language path — zero API calls ──────────────
     if (langsToTranslate.length === 0) {
       setError(''); setStep(3); setPages(null); setMonoPage(null); setIsMono(false);
+      const glossary = getGlossary();
       try {
         const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
-        const baseAboutHtml = buildAboutHtmlStr(aboutBase, base);
+        const baseAboutHtml = buildAboutHtmlStr(aboutBase, base, glossary);
         const baseStrings = buildBaseStrings(form);
-        const result = { [base]: buildPage(form, base, baseStrings, baseAboutHtml, base, [base]) };
+        const result = { [base]: buildPage(form, base, baseStrings, baseAboutHtml, base, [base], glossary) };
         setCachedTranslations({ uiTrans: {}, aboutByLang: { [base]: baseAboutHtml }, enStrings: baseStrings });
         setPages(result); setIsMono(false); setMonoPage(null); setActiveTab(base);
         saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: result, baseLang: base, generatedLangs: [base] });
@@ -571,7 +572,7 @@ export default function Builder() {
 
     try {
       const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
-      const baseAboutHtml = buildAboutHtmlStr(aboutBase, base);
+      const baseAboutHtml = buildAboutHtmlStr(aboutBase, base, glossary);
 
       // Step 1: Translate UI texts
       const uiTrans = await translateTexts(form, glossary, base, langsToTranslate);
@@ -580,7 +581,7 @@ export default function Builder() {
       setStep(2);
       const aboutHtmlsByLang = {};
       for (const lang of langsToTranslate) {
-        aboutHtmlsByLang[lang] = buildAboutHtmlStr(aboutBase, lang);
+        aboutHtmlsByLang[lang] = buildAboutHtmlStr(aboutBase, lang, glossary);
       }
       const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(baseAboutHtml, aboutHtmlsByLang, glossary, base, langsToTranslate);
       setCacheInfo({ fromCache, textCount });
@@ -597,7 +598,7 @@ export default function Builder() {
       const result = {};
       for (const lang of allLangs) {
         const strings = lang === base ? baseStrings : { ...baseStrings, ...(uiTrans[lang] || {}) };
-        result[lang] = buildPage(form, lang, strings, aboutByLang[lang] || baseAboutHtml, base, allLangs);
+        result[lang] = buildPage(form, lang, strings, aboutByLang[lang] || baseAboutHtml, base, allLangs, glossary);
       }
 
       setCachedTranslations({ uiTrans, aboutByLang, enStrings: baseStrings });
@@ -623,12 +624,13 @@ export default function Builder() {
     // ── DEFINITIVE GUARD: single-language path — zero API calls ──────────────
     if (langsToTranslate.length === 0) {
       setStep(3);
+      const glossary = getGlossary();
       try {
         const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
-        const baseAboutHtml = buildAboutHtmlStr(aboutBase, base);
+        const baseAboutHtml = buildAboutHtmlStr(aboutBase, base, glossary);
         const baseStrings = buildBaseStrings(form);
         const allStrings = { [base]: baseStrings };
-        const html = buildMultilingualPage(form, allStrings, { [base]: baseAboutHtml }, base, [base]);
+        const html = buildMultilingualPage(form, allStrings, { [base]: baseAboutHtml }, base, [base], glossary);
         setMonoPage(html); setIsMono(true);
         saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: { mono: html }, isMono: true, baseLang: base, generatedLangs: [base] });
         setStep(4);
@@ -638,6 +640,7 @@ export default function Builder() {
 
     // ── MULTI-LANGUAGE PATH — API calls happen here ───────────────────────────
     let uiTrans, aboutByLang, baseStrings_val;
+    const glossary = getGlossary();
 
     if (cachedTranslations) {
       ({ uiTrans, aboutByLang, enStrings: baseStrings_val } = cachedTranslations);
@@ -652,16 +655,15 @@ export default function Builder() {
         return;
       }
       setStep(1);
-      const glossary = getGlossary();
       try {
         const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
-        const baseAboutHtml = buildAboutHtmlStr(aboutBase, base);
+        const baseAboutHtml = buildAboutHtmlStr(aboutBase, base, glossary);
 
         uiTrans = await translateTexts(form, glossary, base, langsToTranslate);
         setStep(2);
         const aboutHtmlsByLang = {};
         for (const lang of langsToTranslate) {
-          aboutHtmlsByLang[lang] = buildAboutHtmlStr(aboutBase, lang);
+          aboutHtmlsByLang[lang] = buildAboutHtmlStr(aboutBase, lang, glossary);
         }
         const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(baseAboutHtml, aboutHtmlsByLang, glossary, base, langsToTranslate);
         setCacheInfo({ fromCache, textCount });
@@ -685,7 +687,7 @@ export default function Builder() {
       allStrings[lang] = lang === base ? baseStrings_val : { ...baseStrings_val, ...(uiTrans[lang] || {}) };
     }
 
-    const html = buildMultilingualPage(form, allStrings, aboutByLang, base, allLangs);
+    const html = buildMultilingualPage(form, allStrings, aboutByLang, base, allLangs, glossary);
     setMonoPage(html); setIsMono(true);
     saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: { mono: html }, isMono: true, baseLang: base, generatedLangs: allLangs });
     setStep(4);
