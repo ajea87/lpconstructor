@@ -196,6 +196,7 @@ function parseOrRepair(raw, context) {
 
 // ── Public API functions ─────────────────────────────────────
 export async function translateTexts(formFields, glossary, sourceLang = 'en', targetLangs = ['es','it','fr','de']) {
+  console.warn('[api] translateTexts called — should NOT appear for single-language builds. targetLangs:', targetLangs);
   if (targetLangs.length === 0) return {};
 
   const sourceLangName = LANG_NAMES_API[sourceLang] || sourceLang;
@@ -228,6 +229,7 @@ unlimitedTitle: Unlimited Access to all Courses`;
 
 // Single API call → all target languages, with localStorage cache
 export async function translateAboutHtmlAllLangs(baseHtml, aboutHtmlsByLang, glossary, sourceLang = 'en', targetLangs = ['es','it','fr','de']) {
+  console.warn('[api] translateAboutHtmlAllLangs called — should NOT appear for single-language builds. targetLangs:', targetLangs);
   if (targetLangs.length === 0) return { result: {}, fromCache: false, textCount: 0 };
 
   const sourceTexts = extractTextsFromHtml(baseHtml);

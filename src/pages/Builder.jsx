@@ -537,68 +537,71 @@ export default function Builder() {
   }
 
   async function generate() {
+    const base = baseLang.toLowerCase();
     const langsToTranslate = targetLangs
       .map(l => l.toLowerCase())
-      .filter(l => l !== baseLang.toLowerCase());
+      .filter(l => l !== base);
 
-    console.log('[generate] baseLang:', baseLang, '| targetLangs:', targetLangs, '| langsToTranslate:', langsToTranslate);
+    console.log('[generate] base:', base, '| targetLangs:', targetLangs, '| langsToTranslate:', langsToTranslate);
 
-    // API key guard — only needed when there are langs to translate
-    if (langsToTranslate.length > 0) {
-      const currentProvider = provider;
-      if (currentProvider === 'anthropic' && !getAnthropicKey()) { setError('Enter your Anthropic API key.'); return; }
-      if (currentProvider === 'openai' && !getOpenAIKey()) { setError('Enter your OpenAI API key.'); return; }
+    // ── DEFINITIVE GUARD: single-language path — zero API calls ──────────────
+    if (langsToTranslate.length === 0) {
+      setError(''); setStep(3); setPages(null); setMonoPage(null); setIsMono(false);
+      try {
+        const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
+        const baseAboutHtml = buildAboutHtmlStr(aboutBase, base);
+        const baseStrings = buildBaseStrings(form);
+        const result = { [base]: buildPage(form, base, baseStrings, baseAboutHtml, base, [base]) };
+        setCachedTranslations({ uiTrans: {}, aboutByLang: { [base]: baseAboutHtml }, enStrings: baseStrings });
+        setPages(result); setIsMono(false); setMonoPage(null); setActiveTab(base);
+        saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: result, baseLang: base, generatedLangs: [base] });
+        setStep(4);
+      } catch (err) { setError(err.message || String(err)); setStep(0); }
+      return; // ← nothing below this line runs for single-lang
     }
 
-    setError('');
-    setStep(langsToTranslate.length > 0 ? 1 : 3);
-    setPages(null); setMonoPage(null); setIsMono(false);
+    // ── MULTI-LANGUAGE PATH — API calls happen here ───────────────────────────
+    const currentProvider = provider;
+    if (currentProvider === 'anthropic' && !getAnthropicKey()) { setError('Enter your Anthropic API key.'); return; }
+    if (currentProvider === 'openai' && !getOpenAIKey()) { setError('Enter your OpenAI API key.'); return; }
+
+    setError(''); setStep(1); setPages(null); setMonoPage(null); setIsMono(false);
     const glossary = getGlossary();
 
     try {
-      let uiTrans = {};
-      let aboutByLang = {};
       const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
-      const baseAboutHtml = buildAboutHtmlStr(aboutBase, baseLang);
+      const baseAboutHtml = buildAboutHtmlStr(aboutBase, base);
 
-      if (langsToTranslate.length > 0) {
-        // Step 1: Translate UI texts
-        uiTrans = await translateTexts(form, glossary, baseLang, langsToTranslate);
+      // Step 1: Translate UI texts
+      const uiTrans = await translateTexts(form, glossary, base, langsToTranslate);
 
-        // Step 2: Translate About — single call for all target langs
-        setStep(2);
-        const aboutHtmlsByLang = {};
-        for (const lang of langsToTranslate) {
-          aboutHtmlsByLang[lang] = buildAboutHtmlStr(aboutBase, lang);
-        }
-        const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(baseAboutHtml, aboutHtmlsByLang, glossary, baseLang, langsToTranslate);
-        setCacheInfo({ fromCache, textCount });
+      // Step 2: Translate About — single call for all target langs
+      setStep(2);
+      const aboutHtmlsByLang = {};
+      for (const lang of langsToTranslate) {
+        aboutHtmlsByLang[lang] = buildAboutHtmlStr(aboutBase, lang);
+      }
+      const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(baseAboutHtml, aboutHtmlsByLang, glossary, base, langsToTranslate);
+      setCacheInfo({ fromCache, textCount });
 
-        aboutByLang = { [baseLang]: baseAboutHtml };
-        for (const lang of langsToTranslate) {
-          aboutByLang[lang] = applyGlossaryPostProcessing(aboutTranslated[lang] || baseAboutHtml, lang, glossary);
-        }
-      } else {
-        // No translation needed
-        setStep(3);
-        aboutByLang = { [baseLang]: baseAboutHtml };
+      const aboutByLang = { [base]: baseAboutHtml };
+      for (const lang of langsToTranslate) {
+        aboutByLang[lang] = applyGlossaryPostProcessing(aboutTranslated[lang] || baseAboutHtml, lang, glossary);
       }
 
-      // Step 3: Build pages
+      // Step 3: Build pages for all selected langs
       setStep(3);
       const baseStrings = buildBaseStrings(form);
+      const allLangs = [base, ...langsToTranslate];
       const result = {};
-      for (const lang of targetLangs) {
-        const strings = lang === baseLang ? baseStrings : { ...baseStrings, ...(uiTrans[lang] || {}) };
-        result[lang] = buildPage(form, lang, strings, aboutByLang[lang] || baseAboutHtml, baseLang, targetLangs);
+      for (const lang of allLangs) {
+        const strings = lang === base ? baseStrings : { ...baseStrings, ...(uiTrans[lang] || {}) };
+        result[lang] = buildPage(form, lang, strings, aboutByLang[lang] || baseAboutHtml, base, allLangs);
       }
 
       setCachedTranslations({ uiTrans, aboutByLang, enStrings: baseStrings });
-      setPages(result);
-      setIsMono(false);
-      setMonoPage(null);
-      setActiveTab(baseLang);
-      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: result, baseLang, generatedLangs: targetLangs });
+      setPages(result); setIsMono(false); setMonoPage(null); setActiveTab(base);
+      saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: result, baseLang: base, generatedLangs: allLangs });
       setStep(4);
     } catch (err) {
       setError(err.message || String(err));
@@ -607,54 +610,63 @@ export default function Builder() {
   }
 
   async function generateMono() {
-    setError(''); setMonoPage(null); setPages(null); setIsMono(false);
-
+    const base = baseLang.toLowerCase();
     const langsToTranslate = targetLangs
       .map(l => l.toLowerCase())
-      .filter(l => l !== baseLang.toLowerCase());
+      .filter(l => l !== base);
 
-    console.log('[generateMono] baseLang:', baseLang, '| targetLangs:', targetLangs, '| langsToTranslate:', langsToTranslate);
+    console.log('[generateMono] base:', base, '| targetLangs:', targetLangs, '| langsToTranslate:', langsToTranslate);
 
+    setError(''); setMonoPage(null); setPages(null); setIsMono(false);
+
+    // ── DEFINITIVE GUARD: single-language path — zero API calls ──────────────
+    if (langsToTranslate.length === 0) {
+      setStep(3);
+      try {
+        const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
+        const baseAboutHtml = buildAboutHtmlStr(aboutBase, base);
+        const baseStrings = buildBaseStrings(form);
+        const allStrings = { [base]: baseStrings };
+        const html = buildMultilingualPage(form, allStrings, { [base]: baseAboutHtml }, base, [base]);
+        setMonoPage(html); setIsMono(true);
+        saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: { mono: html }, isMono: true, baseLang: base, generatedLangs: [base] });
+        setStep(4);
+      } catch (err) { setError(err.message || String(err)); setStep(0); }
+      return; // ← nothing below this line runs for single-lang
+    }
+
+    // ── MULTI-LANGUAGE PATH — API calls happen here ───────────────────────────
     let uiTrans, aboutByLang, baseStrings_val;
 
     if (cachedTranslations) {
       ({ uiTrans, aboutByLang, enStrings: baseStrings_val } = cachedTranslations);
     } else {
-      if (langsToTranslate.length > 0) {
-        const currentProvider = provider;
-        if (currentProvider === 'anthropic' && !getAnthropicKey()) {
-          setError('Enter your Anthropic API key to generate multilingual page.');
-          return;
-        }
-        if (currentProvider === 'openai' && !getOpenAIKey()) {
-          setError('Enter your OpenAI API key to generate multilingual page.');
-          return;
-        }
-        setStep(1);
-      } else {
-        setStep(3);
+      const currentProvider = provider;
+      if (currentProvider === 'anthropic' && !getAnthropicKey()) {
+        setError('Enter your Anthropic API key to generate multilingual page.');
+        return;
       }
+      if (currentProvider === 'openai' && !getOpenAIKey()) {
+        setError('Enter your OpenAI API key to generate multilingual page.');
+        return;
+      }
+      setStep(1);
       const glossary = getGlossary();
       try {
         const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
-        const baseAboutHtml = buildAboutHtmlStr(aboutBase, baseLang);
+        const baseAboutHtml = buildAboutHtmlStr(aboutBase, base);
 
-        if (langsToTranslate.length > 0) {
-          uiTrans = await translateTexts(form, glossary, baseLang, langsToTranslate);
-          setStep(2);
-          const aboutHtmlsByLang = {};
-          for (const lang of langsToTranslate) {
-            aboutHtmlsByLang[lang] = buildAboutHtmlStr(aboutBase, lang);
-          }
-          const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(baseAboutHtml, aboutHtmlsByLang, glossary, baseLang, langsToTranslate);
-          setCacheInfo({ fromCache, textCount });
-          aboutByLang = { [baseLang]: baseAboutHtml };
-          for (const lang of langsToTranslate) {
-            aboutByLang[lang] = applyGlossaryPostProcessing(aboutTranslated[lang] || baseAboutHtml, lang, glossary);
-          }
-        } else {
-          uiTrans = {};
-          aboutByLang = { [baseLang]: baseAboutHtml };
+        uiTrans = await translateTexts(form, glossary, base, langsToTranslate);
+        setStep(2);
+        const aboutHtmlsByLang = {};
+        for (const lang of langsToTranslate) {
+          aboutHtmlsByLang[lang] = buildAboutHtmlStr(aboutBase, lang);
+        }
+        const { result: aboutTranslated, fromCache, textCount } = await translateAboutHtmlAllLangs(baseAboutHtml, aboutHtmlsByLang, glossary, base, langsToTranslate);
+        setCacheInfo({ fromCache, textCount });
+        aboutByLang = { [base]: baseAboutHtml };
+        for (const lang of langsToTranslate) {
+          aboutByLang[lang] = applyGlossaryPostProcessing(aboutTranslated[lang] || baseAboutHtml, lang, glossary);
         }
         baseStrings_val = buildBaseStrings(form);
         setCachedTranslations({ uiTrans, aboutByLang, enStrings: baseStrings_val });
@@ -666,15 +678,15 @@ export default function Builder() {
     }
 
     setStep(3);
+    const allLangs = [base, ...langsToTranslate];
     const allStrings = {};
-    for (const lang of targetLangs) {
-      allStrings[lang] = lang === baseLang ? baseStrings_val : { ...baseStrings_val, ...(uiTrans[lang] || {}) };
+    for (const lang of allLangs) {
+      allStrings[lang] = lang === base ? baseStrings_val : { ...baseStrings_val, ...(uiTrans[lang] || {}) };
     }
 
-    const html = buildMultilingualPage(form, allStrings, aboutByLang, baseLang, targetLangs);
-    setMonoPage(html);
-    setIsMono(true);
-    saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: { mono: html }, isMono: true, baseLang, generatedLangs: targetLangs });
+    const html = buildMultilingualPage(form, allStrings, aboutByLang, base, allLangs);
+    setMonoPage(html); setIsMono(true);
+    saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: { mono: html }, isMono: true, baseLang: base, generatedLangs: allLangs });
     setStep(4);
   }
 
