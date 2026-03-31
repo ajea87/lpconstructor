@@ -157,6 +157,43 @@ function applyTranslations(html, sourceTexts, translatedTexts) {
 
 const LANG_NAMES_API = {en:'English', es:'Spanish (es)', it:'Italian (it)', fr:'French (fr)', de:'German (de)'};
 
+// ── JSON repair helper ───────────────────────────────────────
+function repairJson(str) {
+  let s = str;
+  // If the last char is inside an open string, close it
+  const quoteCount = (s.match(/(?<!\\)"/g) || []).length;
+  if (quoteCount % 2 !== 0) s += '"';
+  // Close any open arrays
+  const openArr  = (s.match(/\[/g) || []).length;
+  const closeArr = (s.match(/\]/g) || []).length;
+  for (let i = 0; i < openArr - closeArr; i++) s += ']';
+  // Close any open objects
+  const openObj  = (s.match(/\{/g) || []).length;
+  const closeObj = (s.match(/\}/g) || []).length;
+  for (let i = 0; i < openObj - closeObj; i++) s += '}';
+  return s;
+}
+
+function parseOrRepair(raw, context) {
+  const clean = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '').trim();
+  if (clean.endsWith('}')) {
+    try { return JSON.parse(clean); } catch (e) {
+      throw new Error(`JSON parse error in ${context}: ${e.message}. Tail: ${clean.slice(-200)}`);
+    }
+  }
+  // Truncated — try to repair
+  console.warn('[api] ' + context + ': response appears truncated, attempting repair. Tail:', clean.slice(-100));
+  const repaired = repairJson(clean);
+  try {
+    return JSON.parse(repaired);
+  } catch (_) {
+    throw new Error(
+      '⚠️ Translation was cut short by the AI. ' +
+      'Try selecting fewer target languages at once, or generate them in separate batches.'
+    );
+  }
+}
+
 // ── Public API functions ─────────────────────────────────────
 export async function translateTexts(formFields, glossary, sourceLang = 'en', targetLangs = ['es','it','fr','de']) {
   if (targetLangs.length === 0) return {};
@@ -185,9 +222,8 @@ freeLessonTitle: ${formFields.freeLessonTitle}
 beyondSuffix: You Also Get
 unlimitedTitle: Unlimited Access to all Courses`;
 
-  const raw = await callAI(prompt, 2000, true); // Haiku: fast, cheap, sufficient
-  const clean = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/, '');
-  return JSON.parse(clean);
+  const raw = await callAI(prompt, 8000, true);
+  return parseOrRepair(raw, 'translateTexts');
 }
 
 // Single API call → all target languages, with localStorage cache
@@ -232,9 +268,8 @@ Do NOT translate: artist names, "Ermes Dance Academy", "Motion Bites®".
 Source strings (${sourceLangName}):
 ${JSON.stringify(sourceTexts, null, 2)}`;
 
-  const raw = await callAI(prompt, 6000, true); // Haiku: single call instead of N
-  const clean = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/, '');
-  const translatedTexts = JSON.parse(clean);
+  const raw = await callAI(prompt, 16000, true);
+  const translatedTexts = parseOrRepair(raw, 'translateAboutHtmlAllLangs');
 
   // Save to cache
   saveTranslationCache({ ...cache, [cacheKey]: translatedTexts });
