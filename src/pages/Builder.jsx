@@ -514,13 +514,14 @@ export default function Builder() {
   }
 
   function setBaseLang(lang) {
-    localStorage.setItem(BASE_LANG_KEY, lang);
-    setBaseLangLocal(lang);
-    setTargetLangs(prev => {
-      const next = prev.includes(lang) ? prev : [...prev, lang];
-      localStorage.setItem(TARGET_LANGS_KEY, JSON.stringify(next));
-      return next;
-    });
+    const newBase = lang.toLowerCase();
+    localStorage.setItem(BASE_LANG_KEY, newBase);
+    setBaseLangLocal(newBase);
+    // Reset targetLangs to only the new base — avoids ghost translations
+    // from previously checked langs. User adds more targets explicitly.
+    const next = [newBase];
+    setTargetLangs(next);
+    localStorage.setItem(TARGET_LANGS_KEY, JSON.stringify(next));
   }
 
   function toggleTargetLang(lang) {
