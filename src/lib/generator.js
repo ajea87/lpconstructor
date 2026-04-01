@@ -289,30 +289,28 @@ function getTemplateStrings(lang, glossary) {
   };
 }
 
-function buildSelector(slug, baseLang, generatedLangs) {
-  if (!generatedLangs || generatedLangs.length <= 1) return '';
+function buildSelector(slug, baseLang, currentPageLang) {
+  // Always show all 5 languages — baseLang gets no suffix, others get -[lang]
+  const ALL = ['en', 'es', 'it', 'fr', 'de'];
 
-  // EN is always the base language for slugs and switcher URLs, regardless of baseLang
-  const BASE = 'en';
-
-  const links = generatedLangs.map(lang => {
-    const url = 'https://academy.ermesdance.com/' + slug + (lang === BASE ? '' : '-' + lang);
+  const links = ALL.map(lang => {
+    const url = 'https://academy.ermesdance.com/' + slug + (lang === baseLang ? '' : '-' + lang);
     return '    <a href="' + url + '" class="lang-link" data-lang="' + lang + '">' + LANG_FLAGS_HTML[lang] + ' ' + LANG_NAMES[lang] + '</a>';
   }).join('\n');
 
-  const langMapEntries = generatedLangs.map(lang => {
-    const url = 'https://academy.ermesdance.com/' + slug + (lang === BASE ? '' : '-' + lang);
+  const langMapEntries = ALL.map(lang => {
+    const url = 'https://academy.ermesdance.com/' + slug + (lang === baseLang ? '' : '-' + lang);
     return "'" + lang + "':'" + url + "'";
   }).join(',');
 
-  const flagMapEntries = generatedLangs.map(lang => "'" + lang + "':'" + LANG_FLAGS_HTML[lang] + "'").join(',');
+  const flagMapEntries = ALL.map(lang => "'" + lang + "':'" + LANG_FLAGS_HTML[lang] + "'").join(',');
 
-  const currentLangChecks = generatedLangs
-    .filter(lang => lang !== BASE)
+  const currentLangChecks = ALL
+    .filter(lang => lang !== baseLang)
     .map(lang => "if(p.endsWith('-" + lang + "'))return '" + lang + "';")
     .join('');
 
-  const initialFlag = LANG_FLAGS_HTML[BASE];
+  const initialFlag = LANG_FLAGS_HTML[currentPageLang] || LANG_FLAGS_HTML[baseLang];
 
   return `
 <div id="language-switcher" style="position:fixed;bottom:24px;right:24px;z-index:9999;font-family:'Montserrat',sans-serif;">
@@ -331,13 +329,13 @@ ${links}
   var btn=document.getElementById('lang-btn'),options=document.getElementById('lang-options');
   var langMap={${langMapEntries}};
   var flagMap={${flagMapEntries}};
-  function currentLang(){var p=(window.location.pathname||'').toLowerCase().replace(/\\/+$/,'');${currentLangChecks}return 'en';}
-  btn.innerHTML=flagMap[currentLang()]||flagMap['en'];
-  var ul=(navigator.language||'en').toLowerCase().split('-')[0],pref=localStorage.getItem('forced-lang');
+  function currentLang(){var p=(window.location.pathname||'').toLowerCase().replace(/\\/+$/,'');${currentLangChecks}return '${baseLang}';}
+  btn.innerHTML=flagMap[currentLang()]||flagMap['${baseLang}'];
+  var ul=(navigator.language||'${baseLang}').toLowerCase().split('-')[0],pref=localStorage.getItem('forced-lang');
   var curPath=(window.location.pathname||'').toLowerCase().replace(/\\/+$/,'');
-  if(curPath==='/${slug}'&&!pref&&langMap[ul]&&ul!=='en'){window.location.replace(langMap[ul]);return;}
+  if(curPath==='/${slug}'&&!pref&&langMap[ul]&&ul!=='${baseLang}'){window.location.replace(langMap[ul]);return;}
   btn.addEventListener('click',function(e){e.stopPropagation();var o=options.style.opacity==='1';options.style.opacity=o?'0':'1';options.style.visibility=o?'hidden':'visible';options.style.transform=o?'translateY(10px)':'translateY(0)';});
-  document.querySelectorAll('.lang-link').forEach(function(l){l.addEventListener('click',function(){localStorage.setItem('forced-lang',(l.dataset.lang||'en').toLowerCase());});});
+  document.querySelectorAll('.lang-link').forEach(function(l){l.addEventListener('click',function(){localStorage.setItem('forced-lang',(l.dataset.lang||'${baseLang}').toLowerCase());});});
   document.addEventListener('click',function(){options.style.opacity='0';options.style.visibility='hidden';options.style.transform='translateY(10px)';});
 })();
 <\/script>`;
@@ -544,7 +542,7 @@ export function buildPage(form, lang, strings, translatedAboutHtml, baseLang = '
     freeLessonVideoId,
   };
 
-  const slug = (form.pageSlug || 'lp-artista') + (lang === 'en' ? '' : '-' + lang);
+  const slug = (form.pageSlug || 'lp-artista') + (lang === baseLang ? '' : '-' + lang);
   const baseSlug = form.pageSlug || 'lp-artista';
 
   const html = `<!DOCTYPE html>
@@ -574,7 +572,7 @@ ${buildHeroSection(d)}
 ${translatedAboutHtml}
 ${buildBeyondSection(d)}
 ${buildUnlimitedSection(d)}
-${buildSelector(baseSlug, baseLang, generatedLangs && generatedLangs.length > 1 ? generatedLangs : [])}
+${buildSelector(baseSlug, baseLang, lang)}
 <script>
 (function(){
   var el = document.querySelector('.hero-section');
