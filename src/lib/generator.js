@@ -1,4 +1,5 @@
 const CDN = 'https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163692081/settings_images/';
+const CDN_SITE = 'https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/sites/2148714666/images/';
 
 const ROW1_IMGS = [
   '1a50f35-bf36-0c71-0b80-5a78eeb37b6_PORTADA_ALFONOS_Y_MONICA_01_english.jpg',
@@ -10,6 +11,8 @@ const ROW1_IMGS = [
   'dbbf31d-3b28-817b-6cd3-f425d23a6ec_PORTADA_ANNA_02_english.jpg',
   'ef2aa5f-133d-dec1-f6d1-762674648e4_PORTADA_ANNA_04.jpg',
   '552c6ed-db80-aef-a8b5-81348ffddf51_PORTADA_JOAQUIN_04.jpg',
+  CDN_SITE + '6e52626-e850-1ceb-110a-518363544811_PORTADA_RAQUEL_NICO_01.jpg',
+  CDN_SITE + '54acf8-2f57-e280-8eff-4e7c575c03b_PORTADA_GIGI_curso_01.jpg',
 ];
 const ROW2_IMGS = [
   '734626-4432-05cc-7d85-e2ed6f8ff54_PORTADA_JOAQUIN_03.jpg',
@@ -21,6 +24,8 @@ const ROW2_IMGS = [
   'c2febde-f774-b1e3-efd0-f4b1d08b70c7_PORTADA_CHARLIE_Y_VERO_04_english.jpg',
   'e03c844-e110-844-eaf-31f23e0634_PORTADA_CHARLIE_Y_VERO_03_english.jpg',
   '1aea0a-b1d3-33ab-fc7b-71ec8d474ab_PORTADA_CHARLIE_Y_VERO_02_english.jpg',
+  CDN_SITE + '8042233-d00f-7fb5-7db2-eecaa3aac_PORTADA_GIGI_curso_02.jpg',
+  CDN_SITE + '33851da-f87-048-3d-102f00daea_PORTADA_GIGI_curso_03.jpg',
 ];
 const ROW3_IMGS = [
   '1b5c8f0-c6b2-f5d-65bd-c2a2046c5ea_PORTADA_CHARLIE_Y_VERO_01_english.jpg',
@@ -32,12 +37,13 @@ const ROW3_IMGS = [
   'c6e6d-8127-1ecb-d8-b5251bfaba46_PORTADA_JUDITH_03_english.jpg',
   'eaa46c6-ecaa-a874-d472-b5612a1430_PORTADA_JUDITH_01_english.jpg',
   '8de5cfc-ffe-a33a-6f37-00128eb6a4f3_PORTADA_JUDITH_02_english.jpg',
+  CDN_SITE + '7036767-08d6-5e32-14a5-740ffd3bbc72_PORTADA_GIGI_curso_04.jpg',
 ];
 
 function tiles(imgs) {
   // doubled for infinite scroll
   return [...imgs, ...imgs].map(f =>
-    '<div class="ed-tile"><img alt="" src="' + CDN + f + '"></div>'
+    '<div class="ed-tile"><img alt="" src="' + (f.startsWith('http') ? f : CDN + f) + '"></div>'
   ).join('\n        ');
 }
 
