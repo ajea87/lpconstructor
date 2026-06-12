@@ -47,6 +47,27 @@ function tiles(imgs) {
   ).join('\n        ');
 }
 
+// Escape user-provided values for HTML text and double-quoted attribute contexts
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function escAll(obj) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) out[k] = esc(v);
+  return out;
+}
+
+// Wistia IDs and slugs are interpolated into inline-script strings, where HTML
+// escaping cannot protect — whitelist the characters instead
+function cleanId(s) {
+  return String(s ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
+}
+
 function buildHeroSection(d) {
   const heroId = d.heroVideoId || 'HERO_ID';
   const freeLessonId = d.freeLessonVideoId || 'FREE_ID';
@@ -85,12 +106,12 @@ function buildHeroSection(d) {
   .video-modal__video{width:100%;aspect-ratio:16/9;background:#000;position:relative;}
   .video-modal__video iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;}
 </style>
-<script src="https://fast.wistia.com/assets/external/E-v1.js" async><\/script>
+<script src="https://fast.wistia.com/assets/external/E-v1.js" async></script>
 <div class="hero-section" style="background:#000;color:#fff;text-align:center;font-family:'Montserrat',sans-serif;margin:0;width:100%;">
   <div class="hero-inner" style="max-width:1180px;margin:0 auto;">
     <div class="hero-grid">
       <div class="hero-video" id="heroVideoWrap">
-        <script src="https://fast.wistia.com/embed/medias/${heroId}.jsonp" async><\/script>
+        <script src="https://fast.wistia.com/embed/medias/${heroId}.jsonp" async></script>
         <div class="wistia_embed wistia_async_${heroId} videoFoam=true autoPlay=true muted=true playerColor=000000 endVideoBehavior=loop" style="position:absolute;inset:0;width:100%;height:100%;">&nbsp;</div>
         <button class="sound-btn" id="activateSoundBtn" type="button" aria-label="${d.activateSound}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
@@ -139,7 +160,7 @@ function buildHeroSection(d) {
   if(closeBtn)closeBtn.addEventListener('click',function(e){e.stopPropagation();closeModal();});
   if(modal)modal.addEventListener('click',function(e){if(e.target===modal)closeModal();});
 })();
-<\/script>`;
+</script>`;
 }
 
 function buildBeyondSection(d) {
@@ -273,6 +294,7 @@ function getTemplateStrings(lang, glossary) {
     lessonsLabel:   t('Lessons:'),
     categoryLabel:  t('Category:'),
     allLevels:      t('All levels'),
+    beyondSuffix:   t('You Also Get'),
     beyondSub:      t('Everything inside Ermes Dance Academy to keep improving faster'),
     stat1:          t('Courses'),
     stat2:          t('Bite-Sized Classes'),
@@ -296,6 +318,7 @@ function getTemplateStrings(lang, glossary) {
 }
 
 function buildSelector(slug, currentPageLang) {
+  slug = cleanId(slug);
   // EN is always the base: no suffix for EN, -[lang] for all others
   const ALL = ['en', 'es', 'it', 'fr', 'de'];
 
@@ -344,11 +367,11 @@ ${links}
   document.querySelectorAll('.lang-link').forEach(function(l){l.addEventListener('click',function(){localStorage.setItem('forced-lang',(l.dataset.lang||'en').toLowerCase());});});
   document.addEventListener('click',function(){options.style.opacity='0';options.style.visibility='hidden';options.style.transform='translateY(10px)';});
 })();
-<\/script>`;
+</script>`;
 }
 
 export function buildAboutHtmlStr(aboutData, lang = 'en', glossary = []) {
-  const tpl = getTemplateStrings(lang, glossary);
+  const tpl = escAll(getTemplateStrings(lang, glossary));
   const {
     introText = '',
     totalLessons = '',
@@ -364,29 +387,29 @@ export function buildAboutHtmlStr(aboutData, lang = 'en', glossary = []) {
     .split(/\n\n+/)
     .map(p => p.trim())
     .filter(Boolean)
-    .map(p => `      <p>${p.replace(/\n/g, '<br/>')}</p>`)
+    .map(p => `      <p>${esc(p).replace(/\n/g, '<br/>')}</p>`)
     .join('\n');
 
   // Build accordion items
   const accordionItems = courses.map((course) => {
     const lessonCount = (course.lessons || []).length;
     const lessonsHtml = (course.lessons || []).map((lesson) => {
-      const resolvedWistiaId = lesson.wistiaIds
+      const resolvedWistiaId = cleanId(lesson.wistiaIds
         ? (lesson.wistiaIds[lang] || lesson.wistiaIds.en || '')
-        : (lesson.wistiaId || '');
+        : (lesson.wistiaId || ''));
       const freeBtn = resolvedWistiaId
-        ? `\n              <button class="ed4-free" type="button" data-wistia="${resolvedWistiaId}" data-title="${lesson.title}">\n                <span class="ed4-play" aria-hidden="true">▶</span> ${tpl.freeLessonLabel}\n              </button>`
+        ? `\n              <button class="ed4-free" type="button" data-wistia="${resolvedWistiaId}" data-title="${esc(lesson.title)}">\n                <span class="ed4-play" aria-hidden="true">▶</span> ${tpl.freeLessonLabel}\n              </button>`
         : '';
       return `
             <div class="ed4-lesson">
               <div class="ed4-lesson-left">
                 <span class="ed4-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M15 10l4.5 2.6a1 1 0 010 1.8L15 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                <span class="ed4-lesson-title">${lesson.title}</span>
+                <span class="ed4-lesson-title">${esc(lesson.title)}</span>
               </div>${freeBtn}
             </div>`;
     }).join('');
 
-    const titleWithMeta = `${course.title} | ${instructorName || 'Instructor'} | ${course.level || tpl.allLevels}`;
+    const titleWithMeta = `${esc(course.title)} | ${esc(instructorName) || 'Instructor'} | ${esc(course.level) || tpl.allLevels}`;
 
     return `
         <div class="ed4-item">
@@ -403,7 +426,7 @@ export function buildAboutHtmlStr(aboutData, lang = 'en', glossary = []) {
   }).join('');
 
   const avatarHtml = instructorPhoto
-    ? `<img src="${instructorPhoto}" alt="${instructorName}"/>`
+    ? `<img src="${esc(instructorPhoto)}" alt="${esc(instructorName)}"/>`
     : '';
 
   return `<style>
@@ -463,9 +486,9 @@ export function buildAboutHtmlStr(aboutData, lang = 'en', glossary = []) {
       <div class="ed4-rule"></div>
 ${paragraphs}
       <div class="ed4-meta">
-        ${tpl.instructorLabel} <b>${instructorName}</b><br/>
-        ${tpl.lessonsLabel} <b>${totalLessons}</b><br/>
-        ${tpl.categoryLabel} <b>${category}</b><br/>
+        ${tpl.instructorLabel} <b>${esc(instructorName)}</b><br/>
+        ${tpl.lessonsLabel} <b>${esc(totalLessons)}</b><br/>
+        ${tpl.categoryLabel} <b>${esc(category)}</b><br/>
       </div>
     </div>
 
@@ -479,8 +502,8 @@ ${accordionItems}
 
     <div class="ed4-instructor">
       <div class="ed4-avatar">${avatarHtml}</div>
-      <div class="ed4-name">${instructorName}</div>
-      <div class="ed4-role">${instructorRole}</div>
+      <div class="ed4-name">${esc(instructorName)}</div>
+      <div class="ed4-role">${esc(instructorRole)}</div>
       <div class="ed4-instructor-sep"></div>
     </div>
   </div>
@@ -511,17 +534,17 @@ ${accordionItems}
     });
   });
   var modal=document.getElementById('ed4VideoModal'),closeBtn=document.getElementById('ed4VideoClose'),titleEl=document.getElementById('ed4VideoTitle'),wrap=document.getElementById('ed4WistiaWrap');
-  function openModal(id,title){if(!modal)return;if(titleEl)titleEl.textContent=title;wrap.innerHTML='<iframe src="https://fast.wistia.net/embed/iframe/'+id+'?autoPlay=true&playerColor=000000&fitStrategy=fill" allowtransparency="true" allowfullscreen frameborder="0" allow="autoplay;fullscreen" style="position:absolute;inset:0;width:100%;height:100%;border:0;"><\/iframe>';modal.classList.add('is-open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';if(closeBtn)closeBtn.focus();document.addEventListener('keydown',onKey);}
+  function openModal(id,title){if(!modal)return;if(titleEl)titleEl.textContent=title;wrap.innerHTML='<iframe src="https://fast.wistia.net/embed/iframe/'+id+'?autoPlay=true&playerColor=000000&fitStrategy=fill" allowtransparency="true" allowfullscreen frameborder="0" allow="autoplay;fullscreen" style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe>';modal.classList.add('is-open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';if(closeBtn)closeBtn.focus();document.addEventListener('keydown',onKey);}
   function closeModal(){if(!modal)return;wrap.innerHTML='';modal.classList.remove('is-open');modal.setAttribute('aria-hidden','true');document.body.style.overflow='';document.removeEventListener('keydown',onKey);}
   function onKey(e){if(e.key==='Escape')closeModal();}
   document.querySelectorAll('.ed4-free').forEach(function(btn){btn.addEventListener('click',function(){openModal(btn.dataset.wistia,btn.dataset.title);});});
   if(closeBtn)closeBtn.addEventListener('click',closeModal);
   if(modal)modal.addEventListener('click',function(e){if(e.target===modal)closeModal();});
 })();
-<\/script>`;
+</script>`;
 }
 
-export function buildPage(form, lang, strings, translatedAboutHtml, baseLang = 'en', generatedLangs = null, glossary = []) {
+export function buildPage(form, lang, strings, translatedAboutHtml, glossary = []) {
   // strings = { courseLevel, courseTitle, courseSubtitle, ctaText, freeLessonTitle, beyondSuffix, unlimitedTitle, ... }
 
   // Resolve video IDs — new model (heroVideoIds/freeLessonVideoIds) with fallback to old (wistiaVideos)
@@ -538,17 +561,16 @@ export function buildPage(form, lang, strings, translatedAboutHtml, baseLang = '
   }
 
   const tpl = getTemplateStrings(lang, glossary);
-  const d = {
+  const d = escAll({
     ...tpl,
     ...strings,
     artistName: form.artistName || '',
     artistRole: form.artistRole || '',
     ctaUrl: (form.ctaUrls ? (form.ctaUrls[lang] || form.ctaUrls.en || '#') : (form.ctaUrl || '#')),
-    heroVideoId,
-    freeLessonVideoId,
-  };
+    heroVideoId: cleanId(heroVideoId),
+    freeLessonVideoId: cleanId(freeLessonVideoId),
+  });
 
-  const slug = (form.pageSlug || 'lp-artista') + (lang === 'en' ? '' : '-' + lang);
   const baseSlug = form.pageSlug || 'lp-artista';
 
   const html = `<!DOCTYPE html>
@@ -597,13 +619,12 @@ ${buildSelector(baseSlug, lang)}
     parent = parent.parentElement;
   }
 })();
-<\/script>
+</script>
 </body>
 </html>`;
   if (!html.includes('</html>')) {
     throw new Error('[buildPage] Generated HTML for lang=' + lang + ' is incomplete — missing </html>');
   }
-  console.log('[buildPage] lang=' + lang + ', length=' + html.length + ' chars');
   return html;
 }
 
@@ -624,15 +645,15 @@ function buildD_ml(form, lang, strings, glossary = []) {
     freeLessonVideoId = langV.freeLessonVideoId || enV.freeLessonVideoId || '';
   }
   const tpl = getTemplateStrings(lang, glossary);
-  return {
+  return escAll({
     ...tpl,
     ...strings,
     artistName: form.artistName || '',
     artistRole: form.artistRole || '',
     ctaUrl: form.ctaUrls ? (form.ctaUrls[lang] || form.ctaUrls.en || '#') : (form.ctaUrl || '#'),
-    heroVideoId,
-    freeLessonVideoId,
-  };
+    heroVideoId: cleanId(heroVideoId),
+    freeLessonVideoId: cleanId(freeLessonVideoId),
+  });
 }
 
 function extractStyleBlocks(html) {
@@ -649,7 +670,7 @@ function buildHeroBlock(d, lang) {
   <div class="hero-inner" style="max-width:1180px;margin:0 auto;">
     <div class="hero-grid">
       <div class="hero-video" id="heroVideoWrap-${lang}">
-        <script src="https://fast.wistia.com/embed/medias/${heroId}.jsonp" async><\/script>
+        <script src="https://fast.wistia.com/embed/medias/${heroId}.jsonp" async></script>
         <div class="wistia_embed wistia_async_${heroId} videoFoam=true autoPlay=true muted=true playerColor=000000 endVideoBehavior=loop" style="position:absolute;inset:0;width:100%;height:100%;">&nbsp;</div>
         <button class="sound-btn" id="activateSoundBtn-${lang}" type="button" aria-label="${d.activateSound}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
@@ -809,7 +830,7 @@ function buildMLScript(dByLang, baseLang, generatedLangs) {
   if(_ac)_ac.addEventListener('click',_closeAM);
   if(_am)_am.addEventListener('click',function(e){if(e.target===_am)_closeAM();});
 })();
-<\/script>`;
+</script>`;
 }
 
 export function buildMultilingualPage(form, allStrings, allAboutHtmls, baseLang = 'en', generatedLangs = ML_LANGS, glossary = []) {
@@ -818,7 +839,7 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls, baseLang 
     dByLang[lang] = buildD_ml(form, lang, allStrings[lang], glossary);
   }
 
-  const courseTitle = (allStrings[baseLang] && allStrings[baseLang].courseTitle) || form.courseTitle || 'Course';
+  const courseTitle = esc((allStrings[baseLang] && allStrings[baseLang].courseTitle) || form.courseTitle || 'Course');
 
   // ── Build each piece separately (string concat, no giant template literal) ──
 
@@ -842,7 +863,7 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls, baseLang 
     '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
     '<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">\n' +
-    '<script src="https://fast.wistia.com/assets/external/E-v1.js" async><\/script>\n' +
+    '<script src="https://fast.wistia.com/assets/external/E-v1.js" async></script>\n' +
     '<style>*{box-sizing:border-box;}body{margin:0;padding:0;background:#000;}</style>\n' +
     allCss + '\n' +
     '</head>\n';
@@ -905,7 +926,7 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls, baseLang 
       '  <div class="ed-footer__wrap">\n' +
       '    <div class="ed-footer__divider" aria-hidden="true"></div>\n' +
       '    <div class="ed-footer__logo" aria-hidden="true"><img src="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2164751305/settings_images/a873d5-a7a4-e2ba-0222-2a6224428c21_2946885f-ffea-485a-9de3-55c9ebec76f1.png" alt="" loading="lazy"/></div>\n' +
-      '    <div class="ed-footer__text">\xa9 2026 Ermes Dance Academy. ' + (d.allRightsReserved || 'All rights reserved.') + '</div>\n' +
+      '    <div class="ed-footer__text">\xa9 2026 Ermes Dance Academy. ' + (d.footerText || 'All rights reserved.') + '</div>\n' +
       '  </div>\n' +
       '</footer>';
     return lb(lang, foot, i === 0);
@@ -930,7 +951,7 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls, baseLang 
     '    parent=parent.parentElement;\n' +
     '  }\n' +
     '})();\n' +
-    '<\/script>\n';
+    '</script>\n';
 
   // ── Assemble ──────────────────────────────────────────────────────────────
   const html = head
@@ -950,6 +971,5 @@ export function buildMultilingualPage(form, allStrings, allAboutHtmls, baseLang 
   if (!html.includes('</html>')) {
     throw new Error('[buildMultilingualPage] Generated HTML is incomplete — missing </html>');
   }
-  console.log('[buildMultilingualPage] OK, length:', html.length, 'chars');
   return html;
 }

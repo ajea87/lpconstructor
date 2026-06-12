@@ -82,7 +82,6 @@ async function callAI(prompt, maxTokens = 6000, useTranslationModel = false) {
   const key = getAnthropicKey();
   if (!key) throw new Error('Anthropic API key not set');
   const model = useTranslationModel ? getTranslationModel() : SONNET_MODEL;
-  console.log('[api] callAI model=' + model + ', maxTokens=' + maxTokens);
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -124,35 +123,58 @@ function hashStr(str) {
   return (h >>> 0).toString(36);
 }
 
+// Translatable text nodes of an HTML string — excludes script/style content
+function textNodesOf(doc) {
+  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentNode && node.parentNode.nodeName;
+      return (parent === 'SCRIPT' || parent === 'STYLE')
+        ? NodeFilter.FILTER_REJECT
+        : NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  const nodes = [];
+  let node;
+  while ((node = walker.nextNode())) nodes.push(node);
+  return nodes;
+}
+
+// DOMParser moves leading <style> blocks into <head> — serialize both parts
+function serializeDoc(doc) {
+  return doc.head.innerHTML + doc.body.innerHTML;
+}
+
 function extractTextsFromHtml(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
   const texts = {};
   let i = 0;
-  let node;
-  while ((node = walker.nextNode())) {
+  for (const node of textNodesOf(doc)) {
     const trimmed = node.nodeValue.trim();
     if (trimmed.length > 1) {
       texts['T' + i++] = trimmed;
     }
   }
-  console.log('[api] extractTextsFromHtml: ' + Object.keys(texts).length + ' strings');
   return texts;
 }
 
+// Replace whole text nodes that exactly match a source string — never touches
+// attributes, URLs, scripts, or substrings inside longer texts
 function applyTranslations(html, sourceTexts, translatedTexts) {
-  let result = html;
+  const bySource = new Map();
   for (const key of Object.keys(sourceTexts)) {
     const original = sourceTexts[key];
     const translated = translatedTexts[key];
-    if (translated && original !== translated) {
-      try {
-        const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        result = result.replace(new RegExp(escaped, 'g'), translated);
-      } catch (_) { /* skip invalid regex */ }
-    }
+    if (translated && original !== translated) bySource.set(original, translated);
   }
-  return result;
+  if (bySource.size === 0) return html;
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  for (const node of textNodesOf(doc)) {
+    const trimmed = node.nodeValue.trim();
+    const translated = bySource.get(trimmed);
+    if (translated) node.nodeValue = node.nodeValue.replace(trimmed, translated);
+  }
+  return serializeDoc(doc);
 }
 
 const LANG_NAMES_API = {en:'English', es:'Spanish (es)', it:'Italian (it)', fr:'French (fr)', de:'German (de)'};
@@ -186,7 +208,7 @@ function parseOrRepair(raw, context) {
   const repaired = repairJson(clean);
   try {
     return JSON.parse(repaired);
-  } catch (_) {
+  } catch {
     throw new Error(
       '⚠️ Translation was cut short by the AI. ' +
       'Try selecting fewer target languages at once, or generate them in separate batches.'
@@ -196,7 +218,6 @@ function parseOrRepair(raw, context) {
 
 // ── Public API functions ─────────────────────────────────────
 export async function translateTexts(formFields, glossary, sourceLang = 'en', targetLangs = ['es','it','fr','de']) {
-  console.warn('[api] translateTexts called — should NOT appear for single-language builds. targetLangs:', targetLangs);
   if (targetLangs.length === 0) return {};
 
   const sourceLangName = LANG_NAMES_API[sourceLang] || sourceLang;
@@ -229,7 +250,6 @@ unlimitedTitle: Unlimited Access to all Courses`;
 
 // Single API call → all target languages, with localStorage cache
 export async function translateAboutHtmlAllLangs(baseHtml, aboutHtmlsByLang, glossary, sourceLang = 'en', targetLangs = ['es','it','fr','de']) {
-  console.warn('[api] translateAboutHtmlAllLangs called — should NOT appear for single-language builds. targetLangs:', targetLangs);
   if (targetLangs.length === 0) return { result: {}, fromCache: false, textCount: 0 };
 
   const sourceTexts = extractTextsFromHtml(baseHtml);
@@ -239,7 +259,6 @@ export async function translateAboutHtmlAllLangs(baseHtml, aboutHtmlsByLang, glo
   // Check cache
   const cache = getTranslationCache();
   if (cache[cacheKey]) {
-    console.log('[cache] Hit! key=' + cacheKey + ', ' + textCount + ' strings');
     const cachedTranslatedTexts = cache[cacheKey];
     const result = {};
     for (const lang of targetLangs) {
@@ -256,7 +275,6 @@ export async function translateAboutHtmlAllLangs(baseHtml, aboutHtmlsByLang, glo
   const targetLangsStr = targetLangs.map(l => LANG_NAMES_API[l] || l).join(', ');
   const structureExample = '{"T0":{' + targetLangs.map(l => '"' + l + '":"..."').join(',') + '},"T1":{...},...}';
 
-  console.log('[api] translateAboutHtmlAllLangs: ' + textCount + ' strings, ' + targetLangs.length + ' langs, single call');
   const prompt = `Translate the following text strings from ${sourceLangName} to ${targetLangsStr}.
 Return ONLY valid JSON — no markdown, no code fences.
 Structure: ${structureExample}
@@ -275,7 +293,6 @@ ${JSON.stringify(sourceTexts, null, 2)}`;
 
   // Save to cache
   saveTranslationCache({ ...cache, [cacheKey]: translatedTexts });
-  console.log('[cache] Saved key=' + cacheKey);
 
   // Build translated HTML for each lang
   const result = {};
@@ -290,12 +307,17 @@ ${JSON.stringify(sourceTexts, null, 2)}`;
   return { result, fromCache: false, textCount };
 }
 
-export function applyGlossaryPostProcessing(text, lang, glossary) {
-  let result = text;
-  for (const entry of glossary) {
-    if (entry.en && entry[lang]) {
-      result = result.split(entry.en).join(entry[lang]);
+export function applyGlossaryPostProcessing(html, lang, glossary) {
+  const entries = glossary.filter(g => g.en && g[lang] && g.en !== g[lang]);
+  if (entries.length === 0) return html;
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  for (const node of textNodesOf(doc)) {
+    let value = node.nodeValue;
+    for (const entry of entries) {
+      value = value.split(entry.en).join(entry[lang]);
     }
+    if (value !== node.nodeValue) node.nodeValue = value;
   }
-  return result;
+  return serializeDoc(doc);
 }

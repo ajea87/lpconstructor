@@ -9,7 +9,7 @@ import {
   getTranslationModel, setTranslationModel as persistTranslationModel,
   HAIKU_MODEL, SONNET_MODEL,
   translateTexts, translateAboutHtmlAllLangs, applyGlossaryPostProcessing,
-  getTranslationCache, clearTranslationCache,
+  clearTranslationCache,
 } from '../lib/api';
 import { buildPage, buildAboutHtmlStr, buildMultilingualPage } from '../lib/generator';
 import { saveToHistory, getHistory } from '../lib/storage';
@@ -457,8 +457,14 @@ const SectionLabel = ({ children }) => (
 );
 
 export default function Builder() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [provider, setProvider_local] = useState(getProvider);
-  const [form, setForm] = useState(DEFAULT_FORM);
+  const [editingEntry, setEditingEntry] = useState(() => {
+    const editId = searchParams.get('edit');
+    if (!editId) return null;
+    return getHistory().find(e => e.id === editId && e.form) || null;
+  });
+  const [form, setForm] = useState(() => editingEntry?.form || DEFAULT_FORM);
   const [step, setStep] = useState(0);        // 0 = idle, 1-4 = progress
   const [error, setError] = useState('');
   const [pages, setPages] = useState(null);   // { en, es, it, fr, de } or subset
@@ -473,18 +479,9 @@ export default function Builder() {
   const [cacheInfo, setCacheInfo] = useState(null);
   const [activeTab, setActiveTab] = useState('en');
   const [toast, setToast] = useState('');
-  const [editingEntry, setEditingEntry] = useState(null);
-  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
-    const editId = searchParams.get('edit');
-    if (!editId) return;
-    const entry = getHistory().find(e => e.id === editId);
-    if (entry?.form) {
-      setForm(entry.form);
-      setEditingEntry(entry);
-    }
-    setSearchParams({}, { replace: true });
+    if (searchParams.get('edit')) setSearchParams({}, { replace: true });
   }, []);
 
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(''), 2500); return () => clearTimeout(t); } }, [toast]);
@@ -495,6 +492,10 @@ export default function Builder() {
     setForm(f => ({ ...f, [field]: { ...f[field], [lang]: val } }));
   }
 
+  // Only user-entered fields — template strings (Activate Sound, You Also Get,
+  // Unlimited Access…, footer) come from the glossary via getTemplateStrings,
+  // so they must NOT be listed here or their EN literals would override the
+  // glossary translations when spread into the page data.
   function buildBaseStrings(f) {
     return {
       courseLevel:      f.courseLevel,
@@ -502,14 +503,6 @@ export default function Builder() {
       courseSubtitle:   f.courseSubtitle,
       ctaText:          f.ctaText,
       freeLessonTitle:  f.freeLessonTitle,
-      beyondSuffix:     'You Also Get',
-      unlimitedTitle:   'Unlimited Access to all Courses',
-      activateSound:    'Activate Sound',
-      freeLessonBtn:    'Free Lesson',
-      coursesLabel:     'Courses',
-      biteLabel:        'Bite-Sized Classes',
-      accessLabel:      'Access',
-      allRightsReserved:'All rights reserved.',
     };
   }
 
@@ -533,8 +526,10 @@ export default function Builder() {
     });
   }
 
+  // EN is always the base for filenames — must match the URL scheme that
+  // buildSelector generates for the language switcher (slug → EN, slug-xx → rest)
   function fileSuffix(lang) {
-    return lang === baseLang ? '' : '-' + lang;
+    return lang === 'en' ? '' : '-' + lang;
   }
 
   async function generate() {
@@ -542,8 +537,6 @@ export default function Builder() {
     const langsToTranslate = targetLangs
       .map(l => l.toLowerCase())
       .filter(l => l !== base);
-
-    console.log('[generate] base:', base, '| targetLangs:', targetLangs, '| langsToTranslate:', langsToTranslate);
 
     // ── DEFINITIVE GUARD: single-language path — zero API calls ──────────────
     if (langsToTranslate.length === 0) {
@@ -553,7 +546,7 @@ export default function Builder() {
         const aboutBase = { ...form.aboutData, instructorName: form.artistName, instructorRole: form.artistRole };
         const baseAboutHtml = buildAboutHtmlStr(aboutBase, base, glossary);
         const baseStrings = buildBaseStrings(form);
-        const result = { [base]: buildPage(form, base, baseStrings, baseAboutHtml, base, [base], glossary) };
+        const result = { [base]: buildPage(form, base, baseStrings, baseAboutHtml, glossary) };
         setCachedTranslations({ uiTrans: {}, aboutByLang: { [base]: baseAboutHtml }, enStrings: baseStrings });
         setPages(result); setIsMono(false); setMonoPage(null); setActiveTab(base);
         saveToHistory({ artistName: form.artistName, pageSlug: form.pageSlug, form, pages: result, baseLang: base, generatedLangs: [base] });
@@ -598,7 +591,7 @@ export default function Builder() {
       const result = {};
       for (const lang of allLangs) {
         const strings = lang === base ? baseStrings : { ...baseStrings, ...(uiTrans[lang] || {}) };
-        result[lang] = buildPage(form, lang, strings, aboutByLang[lang] || baseAboutHtml, base, allLangs, glossary);
+        result[lang] = buildPage(form, lang, strings, aboutByLang[lang] || baseAboutHtml, glossary);
       }
 
       setCachedTranslations({ uiTrans, aboutByLang, enStrings: baseStrings });
@@ -616,8 +609,6 @@ export default function Builder() {
     const langsToTranslate = targetLangs
       .map(l => l.toLowerCase())
       .filter(l => l !== base);
-
-    console.log('[generateMono] base:', base, '| targetLangs:', targetLangs, '| langsToTranslate:', langsToTranslate);
 
     setError(''); setMonoPage(null); setPages(null); setIsMono(false);
 
@@ -1120,7 +1111,6 @@ export default function Builder() {
                   onClick={() => setActiveTab(key)}
                   className="px-4 py-2.5 text-sm font-bold transition-colors"
                   style={{
-                    borderBottom: activeTab === key ? '2px solid #fff' : '2px solid transparent',
                     marginBottom: -1,
                     color: activeTab === key ? '#fff' : 'rgba(255,255,255,0.4)',
                     background: 'transparent',

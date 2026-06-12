@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getHistory, deleteFromHistory, getEmailHistory, deleteEmailFromHistory } from '../lib/storage';
 import JSZip from 'jszip';
@@ -16,14 +16,9 @@ function formatDate(iso) {
 }
 
 export default function History() {
-  const [items,      setItems]      = useState([]);
-  const [emailItems, setEmailItems] = useState([]);
+  const [items,      setItems]      = useState(getHistory);
+  const [emailItems, setEmailItems] = useState(getEmailHistory);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    setItems(getHistory());
-    setEmailItems(getEmailHistory());
-  }, []);
 
   function handleDelete(id) {
     if (!confirm('Delete this entry?')) return;
@@ -49,39 +44,31 @@ export default function History() {
     URL.revokeObjectURL(url);
   }
 
+  // EN is always the base for filenames — must match the URL scheme of the
+  // language switcher in the generated pages (slug → EN, slug-xx → rest)
+  function fileSuffix(lang) {
+    return lang === 'en' ? '' : '-' + lang;
+  }
+
   async function downloadZip(entry) {
     const slug = entry.pageSlug || 'lp-artista';
     const pages = entry.pages || {};
-
-    // Diagnostic
-    console.log('[History] downloadZip, slug:', slug, 'pages keys:', Object.keys(pages));
-    Object.entries(pages).forEach(([k, v]) => {
-      console.log('[History] pages.' + k + ':', v?.length ?? 0, 'chars');
-    });
-
     const zip = new JSZip();
 
     if (entry.isMono && pages.mono && pages.mono.length > 100) {
       // Single multilingual file → zip it as one file
       zip.file(slug + '.html', pages.mono);
-      console.log('[History] Adding mono file:', slug + '.html');
     } else {
       // 5-lang or en-only
-      const entryBaseLang = entry.baseLang || 'en';
       LANGS.forEach(lang => {
         const html = pages[lang];
         if (html && html.length > 100) {
-          const suffix = lang === entryBaseLang ? '' : '-' + lang;
-          zip.file(slug + suffix + '.html', html);
-          console.log('[History] Adding', lang + ':', html.length, 'chars');
-        } else {
-          console.warn('[History] Skipping lang=' + lang + ', html length:', html?.length ?? 0);
+          zip.file(slug + fileSuffix(lang) + '.html', html);
         }
       });
     }
 
     const blob = await zip.generateAsync({ type: 'blob' });
-    console.log('[History] ZIP blob size:', blob.size, 'bytes');
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = slug + '.zip'; a.click();
     URL.revokeObjectURL(url);
@@ -90,7 +77,6 @@ export default function History() {
   function downloadMono(entry) {
     const slug = entry.pageSlug || 'lp-artista';
     const html = entry.pages?.mono || '';
-    console.log('[History] downloadMono:', slug + '.html', html.length, 'chars');
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = slug + '.html'; a.click();
@@ -100,10 +86,7 @@ export default function History() {
   function downloadOne(entry, lang) {
     const slug = entry.pageSlug || 'lp-artista';
     const html = entry.pages?.[lang] || '';
-    console.log('[History] downloadOne lang=' + lang + ':', html.length, 'chars');
-    const entryBaseLang = entry.baseLang || (entry.enOnly ? 'en' : 'en');
-    const suffix = lang === entryBaseLang ? '' : '-' + lang;
-    const fname = slug + suffix + '.html';
+    const fname = slug + fileSuffix(lang) + '.html';
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = fname; a.click();
